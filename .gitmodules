@@ -1,0 +1,3 @@
+[submodule "heightgraph"]
+	path = heightgraph
+	url = https://github.com/GIScience/Leaflet.Heightgraph
