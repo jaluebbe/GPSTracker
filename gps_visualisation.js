@@ -69,11 +69,11 @@ baseLayers = {
     "OpenStreetMap": osmLayer,
     "Esri Imagery": esriImagery
 };
-otherLayers = [
+otherLayers = {
     "OpenSeaMap": openSeaMap,
     "Openptmap": openPtMap,
     "OpenRailwayMap": openRailwayMap
-];
+};
 var layerControl = L.control.layers(baseLayers, otherLayers, {
     collapsed: L.Browser.mobile, // hide on mobile devices
     position: 'topright'
