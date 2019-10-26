@@ -39,6 +39,7 @@ var openPtMap = L.tileLayer('http://openptmap.org/tiles/{z}/{x}/{y}.png', {
     attribution: 'Map data: &copy; <a href="http://www.openptmap.org">OpenPtMap</a> contributors'
 });
 var openRailwayMap = L.tileLayer('https://{s}.tiles.openrailwaymap.org/standard/{z}/{x}/{y}.png', {
+    minZoom: 2,
     maxZoom: 19,
     attribution: 'Map data: &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors | Map style: &copy; <a href="https://www.OpenRailwayMap.org">OpenRailwayMap</a> (<a href="https://creativecommons.org/licenses/by-sa/3.0/">CC-BY-SA</a>)'
 });
