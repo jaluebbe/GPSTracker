@@ -62,10 +62,7 @@ legend.onAdd = function(map) {
 
     return div;
 };
-
 legend.addTo(map);
-
-
 baseLayers = {
     "TopPlusOpen": wmsLayer,
     "OpenTopoMap": otmLayer,
