@@ -30,6 +30,17 @@ esriImagery = L.layerGroup([
         maxZoom: 18
     })
 ]);
+var openSeaMap = L.tileLayer('https://tiles.openseamap.org/seamark/{z}/{x}/{y}.png', {
+    attribution: 'Map data: &copy; <a href="http://www.openseamap.org">OpenSeaMap</a> contributors'
+});
+var openPtMap = L.tileLayer('http://openptmap.org/tiles/{z}/{x}/{y}.png', {
+    maxZoom: 17,
+    attribution: 'Map data: &copy; <a href="http://www.openptmap.org">OpenPtMap</a> contributors'
+});
+var openRailwayMap = L.tileLayer('https://{s}.tiles.openrailwaymap.org/standard/{z}/{x}/{y}.png', {
+    maxZoom: 19,
+    attribution: 'Map data: &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors | Map style: &copy; <a href="https://www.OpenRailwayMap.org">OpenRailwayMap</a> (<a href="https://creativecommons.org/licenses/by-sa/3.0/">CC-BY-SA</a>)'
+});
 L.control.scale({
     'imperial': false
 }).addTo(map);
@@ -61,7 +72,11 @@ baseLayers = {
     "OpenStreetMap": osmLayer,
     "Esri Imagery": esriImagery
 };
-otherLayers = {};
+otherLayers = [
+    "OpenSeaMap": openSeaMap,
+    "Openptmap": openPtMap,
+    "OpenRailwayMap": openRailwayMap
+];
 var layerControl = L.control.layers(baseLayers, otherLayers, {
     collapsed: L.Browser.mobile, // hide on mobile devices
     position: 'topright'
