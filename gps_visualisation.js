@@ -34,6 +34,7 @@ var openSeaMap = L.tileLayer('https://tiles.openseamap.org/seamark/{z}/{x}/{y}.p
     attribution: 'Map data: &copy; <a href="http://www.openseamap.org">OpenSeaMap</a> contributors'
 });
 var openPtMap = L.tileLayer('http://openptmap.org/tiles/{z}/{x}/{y}.png', {
+    minZoom: 4,
     maxZoom: 17,
     attribution: 'Map data: &copy; <a href="http://www.openptmap.org">OpenPtMap</a> contributors'
 });
