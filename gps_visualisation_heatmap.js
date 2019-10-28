@@ -8,6 +8,7 @@ legend.onAdd = function(map) {
         '<option selected value="artificial_tracking_data.json">artificial data</option>' +
         '<option value="real_tracking_data.json">real data</option>' +
         '<option value="airbus_tree.json">Airbus tree</option>' +
+        '<option value="flightmap/static/airports_static.json">airports</option>' +
         '</select></td></tr>' +
         '</table>';
     L.DomEvent.on(div, 'click', function(ev) {
@@ -40,7 +41,6 @@ function loadGeoJSON(fileName) {
                 geojson = geojson[0]
             }
             geojson.features.forEach(function(feature) {
-                // TODO: support for other geometry types
                 if (feature.geometry.type == "LineString") {
                     feature.geometry.coordinates.forEach(function(location) {
                         let lastEntry = locations[locations.length - 1];
@@ -50,6 +50,9 @@ function loadGeoJSON(fileName) {
                         }
                         locations.push([location[1], location[0]]);
                     })
+                } else if (feature.geometry.type == "Point") {
+                    let location = feature.geometry.coordinates;
+                    locations.push([location[1], location[0]]);
                 }
             });
             heatmap.setLatLngs(locations);
