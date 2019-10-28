@@ -3,4 +3,4 @@
 	url = https://github.com/GIScience/Leaflet.Heightgraph
 [submodule "flightmap"]
 	path = flightmap
-	url = git://github.com/jaluebbe/FlightMapEuropeSimple.git
+	url = https://github.com/jaluebbe/FlightMapEuropeSimple.git
