@@ -48,6 +48,7 @@ function loadGeoJSON(fileName) {
     xhr.send();
 }
 loadGeoJSON(document.getElementById("trackSelect").value);
+hg._expand();
 document.getElementById("trackSelect").onchange = function() {
     loadGeoJSON(document.getElementById("trackSelect").value);
 };
