@@ -17,21 +17,8 @@ legend.onAdd = function(map) {
     return div;
 };
 legend.addTo(map);
-var hg = L.control.heightgraph({
-    width: 480,
-    height: 180,
-    margins: {
-        top: 10,
-        right: 30,
-        bottom: 55,
-        left: 50
-    },
-    expand: false,
-    position: "bottomright"
-});
-hg.addTo(map);
+var hg;
 var geoJsonLayer = L.geoJson([]).addTo(map);
-
 function loadGeoJSON(fileName) {
     var xhr = new XMLHttpRequest();
     xhr.open('GET', fileName);
@@ -39,6 +26,21 @@ function loadGeoJSON(fileName) {
     xhr.onload = function() {
         if (xhr.status === 200) {
             var geojson = JSON.parse(xhr.responseText);
+            if (hg !== undefined)
+                hg.remove();
+            hg = L.control.heightgraph({
+                width: 480,
+                height: 180,
+                margins: {
+                    top: 10,
+                    right: 30,
+                    bottom: 55,
+                    left: 50
+                },
+                expand: true,
+                position: "bottomright"
+            });
+            hg.addTo(map);
             hg.addData(geojson);
             geoJsonLayer.clearLayers();
             geoJsonLayer.addData(geojson);
@@ -48,7 +50,6 @@ function loadGeoJSON(fileName) {
     xhr.send();
 }
 loadGeoJSON(document.getElementById("trackSelect").value);
-hg._expand();
 document.getElementById("trackSelect").onchange = function() {
     loadGeoJSON(document.getElementById("trackSelect").value);
 };
