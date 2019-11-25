@@ -1,6 +1,3 @@
-[submodule "heightgraph"]
-	path = heightgraph
-	url = https://github.com/GIScience/Leaflet.Heightgraph
 [submodule "flightmap"]
 	path = flightmap
 	url = https://github.com/jaluebbe/FlightMapEuropeSimple.git
