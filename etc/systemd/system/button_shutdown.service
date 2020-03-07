@@ -1,0 +1,11 @@
+[Unit]
+Description=button shutdown service
+
+[Service]
+Type=simple
+User=pi
+Restart=on-failure
+ExecStart=/home/pi/GPSTracker/gps_tracker/button_shutdown.py
+
+[Install]
+WantedBy=multi-user.target
