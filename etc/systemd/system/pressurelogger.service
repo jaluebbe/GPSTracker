@@ -1,0 +1,12 @@
+[Unit]
+Description=Pressure logger
+After=redis-server.service
+
+[Service]
+Type=simple
+User=pi
+Restart=on-failure
+ExecStart=/home/pi/GPSTracker/gps_tracker/pressure_logger.py
+
+[Install]
+WantedBy=multi-user.target
