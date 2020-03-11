@@ -8,39 +8,51 @@ The code for GPS tracking using a Raspberry Pi will follow later. It is
 assumed that you are using Raspbian (Lite version) as operating system on your 
 Raspberry Pi. 
 ### Setup and requirements
+```
 sudo apt-get install python3-rpi.gpio python3-redis redis-server
-
 sudo pip3 install git+https://github.com/inmcm/micropyGPS.git
 sudo pip3 install gps3 pygeodesy
+```
 
+```
 sudo cp etc/systemd/system/button_shutdown.service /etc/systemd/system/
 chmod +x /home/pi/GPSTracker/gps_tracker/button_shutdown.py
 sudo systemctl enable button_shutdown.service
+```
 
+```
 sudo cp etc/systemd/system/bmp280poller.service /etc/systemd/system/
 chmod +x /home/pi/GPSTracker/gps_tracker/bmp280_poller.py
 sudo systemctl enable bmp280poller.service
+```
 
+```
 sudo cp etc/systemd/system/gpspoller.service /etc/systemd/system/
 chmod +x /home/pi/GPSTracker/gps_tracker/gps3_poller.py
 sudo systemctl enable gpspoller.service
+```
 
+```
 sudo cp etc/systemd/system/gps_baro_merge.service /etc/systemd/system/
 chmod +x /home/pi/GPSTracker/gps_tracker/gps_baro_merge.py
 sudo systemctl enable gps_baro_merge.service
+```
 
+```
 sudo cp etc/systemd/system/pressurelogger.service /etc/systemd/system/
 chmod +x /home/pi/GPSTracker/gps_tracker/pressure_logger.py
 sudo systemctl enable pressurelogger.service
-
+```
 Download egm2008-1 as ZIP file from one of the locations listed at 
 https://geographiclib.sourceforge.io/1.18/geoid.html and put egm2008-1.pgm 
 in /home/pi/egm2008/ .
 
 #### Data transfer to web page (optional)
+```
 sudo cp etc/systemd/system/transfer_gps_data.service /etc/systemd/system/
 chmod +x /home/pi/GPSTracker/gps_tracker/transfer_data.py
 sudo systemctl enable transfer_gps_data.service
+```
 
 ## GPS track visualisation
 Different data sources are visualised on 
