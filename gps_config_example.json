@@ -1,0 +1,8 @@
+{
+    "transfer":{
+        "post_url": "https://example.com/transfer_json_data.php",
+        "password": "my_password",
+        "min_pause": 1.0,
+        "max_pause": 30
+    }
+}
