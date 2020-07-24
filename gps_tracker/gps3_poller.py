@@ -21,7 +21,7 @@ def convert_lat_lon(json_msg, _my_gps):
     if my_gps.longitude[1] == 'E':
         json_msg['lon'] = round(my_gps.longitude[0], 6)
     else:
-        json_msg['lon'] = - round(my_gps.longitude[0])
+        json_msg['lon'] = - round(my_gps.longitude[0], 6)
 
 
 def poll_gpsd():
