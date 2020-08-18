@@ -26,13 +26,16 @@ for item in _pubsub.listen():
     data = json.loads(item['data'])
     pressure_history.append(data['pressure'])
     now = time()
-    if log_pressure and (last_record is None or last_record < now - 5):
+    if last_record is None or last_record < now - 5:
         pressure_data = {
             'pressure': int(round(np.mean(pressure_history))),
             'temperature': round(data['temperature'], 1),
             'utc': int(round(now))}
-        key = 'pressure_log:{}:{}'.format(data['hostname'], strftime("%Y%m"))
-        redis_connection.lpush(key, json.dumps(pressure_data))
+        if log_pressure:
+            key = 'pressure_log:{}:{}'.format(data['hostname'],
+                                              strftime("%Y%m"))
+            redis_connection.lpush(key, json.dumps(pressure_data))
+        redis_connection.set('current_pressure', json.dumps(pressure_data))
         last_record = now
     if old_pressure is None or np.abs(np.diff([data['pressure'], old_pressure])
             ) > 5:
