@@ -11,7 +11,7 @@ Raspberry Pi.
 ```
 sudo apt-get install python3-rpi.gpio python3-redis redis-server
 sudo pip3 install git+https://github.com/inmcm/micropyGPS.git
-sudo pip3 install gps3 pygeodesy
+sudo pip3 install gps3 pygeodesy fastapi uvicorn
 ```
 
 ```
@@ -52,6 +52,12 @@ in /home/pi/egm2008/ .
 sudo cp etc/systemd/system/transfer_gps_data.service /etc/systemd/system/
 chmod +x /home/pi/GPSTracker/gps_tracker/transfer_data.py
 sudo systemctl enable transfer_gps_data.service
+```
+
+#### Local web API (optional)
+```
+sudo cp etc/systemd/system/gps_tracker_api.service /etc/systemd/system/
+sudo systemctl enable gps_tracker_api.service
 ```
 
 ## GPS track visualisation
