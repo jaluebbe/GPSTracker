@@ -59,6 +59,7 @@ sudo systemctl enable transfer_gps_data.service
 sudo cp etc/systemd/system/gps_tracker_api.service /etc/systemd/system/
 sudo systemctl enable gps_tracker_api.service
 ```
+You may access the API via <ip or hostname>:8080/docs .
 
 ## GPS track visualisation
 Different data sources are visualised on 
