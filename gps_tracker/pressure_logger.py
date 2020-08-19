@@ -30,7 +30,8 @@ for item in _pubsub.listen():
         pressure_data = {
             'pressure': int(round(np.mean(pressure_history))),
             'temperature': round(data['temperature'], 1),
-            'utc': int(round(now))}
+            'utc': int(round(now)),
+            'hostname': data['hostname']}
         if log_pressure:
             key = 'pressure_log:{}:{}'.format(data['hostname'],
                                               strftime("%Y%m"))
