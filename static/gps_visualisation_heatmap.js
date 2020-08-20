@@ -8,7 +8,7 @@ legend.onAdd = function(map) {
         '<option selected value="artificial_tracking_data.json">artificial data</option>' +
         '<option value="real_tracking_data.json">real data</option>' +
         '<option value="airbus_tree.json">Airbus tree</option>' +
-        '<option value="flightmap/static/airports_static.json">airports</option>' +
+        '<option value="airports_static.json">airports</option>' +
         '</select></td></tr>' +
         '</table>';
     L.DomEvent.on(div, 'click', function(ev) {
