@@ -62,7 +62,7 @@ for item in _pubsub.listen():
         location = (data['lat'], data['lon'])
         while len(pressure_history) > 0:
             pressure_data = pressure_history.popleft()
-            if pressure_data['p_utc'] >= data['utc']:
+            if pressure_data['p_utc'] > data['utc'] - 0.08:
                 data.update(pressure_data)
                 break
         hdop = data.get('hdop')
