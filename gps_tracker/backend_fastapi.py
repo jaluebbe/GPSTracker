@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Query
 import redis
 import json
 
@@ -15,8 +15,10 @@ def get_current_pressure():
 
 
 @app.get("/api/available_datasets")
-def get_available_datasets():
-    return [key.replace(':', '_') for key in redis_connection.scan_iter('*')]
+def get_available_datasets(category: str = Query('*', regex='^[*a-z0-9]*$'),
+        date: str = Query('*', max_length=8, regex='^[*0-9]*$')):
+    return [key.replace(':', '_') for key in redis_connection.scan_iter(
+        f'{category}:*:{date}')]
 
 
 @app.get("/api/dataset/{id}.json")
