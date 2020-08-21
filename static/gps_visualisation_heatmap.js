@@ -34,6 +34,7 @@ function loadGeoJSON(fileName) {
     xhr.open('GET', fileName);
     xhr.setRequestHeader('Content-Type', 'application/json');
     xhr.onload = function() {
+        map.spin(false);
         if (xhr.status === 200) {
             locations = [];
             let geojson = JSON.parse(xhr.responseText);
@@ -59,9 +60,37 @@ function loadGeoJSON(fileName) {
             map.fitBounds(L.latLngBounds(locations));
         }
     };
+    map.spin(true);
     xhr.send();
 }
-loadGeoJSON(document.getElementById("trackSelect").value);
+
+function refreshTrackingIndex() {
+    var xhr = new XMLHttpRequest();
+    xhr.open('GET', '../api/available_datasets?category=tracking');
+    xhr.setRequestHeader('Content-Type', 'application/json');
+    xhr.onload = function() {
+        if (xhr.status === 200) {
+            let trackSelect = document.getElementById('trackSelect');
+            let len = trackSelect.options.length;
+            for (var i=len; i; i--) {
+                trackSelect.options.remove(i-1);
+            }
+            let trackingIndex = JSON.parse(xhr.responseText);
+            trackingIndex.sort();
+            for (var i=0; i < trackingIndex.length; i++) {
+                let opt = document.createElement('option');
+                opt.value = '../api/dataset/' + trackingIndex[i] + '.geojson';
+                let keyItems = trackingIndex[i].split('_'); 
+                opt.text = keyItems[1] + ' ' + keyItems[2];
+                trackSelect.options.add(opt);
+            }
+        }
+        loadGeoJSON(document.getElementById("trackSelect").value);
+    };
+    xhr.send();
+}
+
+refreshTrackingIndex();
 document.getElementById("trackSelect").onchange = function() {
     loadGeoJSON(document.getElementById("trackSelect").value);
 };
