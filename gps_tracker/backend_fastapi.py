@@ -42,7 +42,9 @@ def get_geojson_dataset(id: str = Query(...,
         regex='^tracking_[a-z0-9]*_[0-9]{8}$')):
     data = ',\n'.join(redis_connection.lrange(id.replace('_', ':'), 0, -1))
     tracking_data = json.loads(f"[{data}]")
-    _coords = [[row['lon'], row['lat']] for row in tracking_data]
+    _coords = [[row['lon'], row['lat'], row['alt']] for row in tracking_data if
+        row.get('alt') is not None]
     _feature = Feature(geometry=LineString(_coords))
     _features = [_feature]
-    return FeatureCollection(_features)
+    return [FeatureCollection(_features, properties={'summary': 'GPS altitude'}
+        )]
