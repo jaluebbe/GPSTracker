@@ -10,7 +10,7 @@ if not os.path.isdir('logs_json'):
 for key in redis_connection.scan_iter('*'):
     file_name = 'logs_json/' + '_'.join(key.split(':')) + '.json'
     print(key)
-    data = redis_connection.lrange(key, 0, -1)
+    data = redis_connection.lrange(key, 0, -1)[::-1]
     with open(file_name, "w+") as f:
         f.write('[')
         f.write(',\n'.join(data))
