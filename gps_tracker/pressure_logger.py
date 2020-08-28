@@ -38,7 +38,7 @@ for item in _pubsub.listen():
         if item['channel'] == 'bme280':
             pressure_data['humidity'] = int(round(data['humidity']))
         if log_pressure and last_log < now - 60:
-            key = 'pressure_log:{}:{}'.format(data['hostname'],
+            key = 'pressure:{}:{}'.format(data['hostname'],
                                               strftime("%Y%m"))
             redis_connection.lpush(key, json.dumps(pressure_data))
             last_log = now
