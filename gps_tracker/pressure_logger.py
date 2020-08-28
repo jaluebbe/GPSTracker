@@ -12,9 +12,11 @@ _pubsub.subscribe(['bmp280', 'bme280', 'transfer_data'])
 #ca 17/min with 0.05s
 last_record = 0
 last_log = 0
-old_pressure = None
+old_pressure = 0
 last_transfer = None
+log_altitude = False
 log_pressure = False
+
 
 for item in _pubsub.listen():
     if not item[u'type'] == 'message':
@@ -42,8 +44,7 @@ for item in _pubsub.listen():
             last_log = now
         redis_connection.set('current_pressure', json.dumps(pressure_data))
         last_record = now
-    if old_pressure is None or np.abs(np.diff([data['pressure'], old_pressure])
-            ) > 5:
+    if log_altitude and np.abs(np.diff([data['pressure'], old_pressure])) > 5:
         key = 'altitude:{}:{}'.format(data['hostname'], strftime("%Y%m%d"))
         redis_connection.lpush(key, json.dumps(data))
         old_pressure = data['pressure']
