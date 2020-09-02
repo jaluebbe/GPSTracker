@@ -13,6 +13,10 @@ sudo apt-get install python3-rpi.gpio python3-redis redis-server gpsd
 python3-pip git python3-numpy python3-smbus  # optional: chrony gpsd-clients
 sudo pip3 install git+https://github.com/inmcm/micropyGPS.git
 sudo pip3 install gps3 PyGeodesy fastapi uvicorn aiofiles geojson
+git clone https://github.com/seandepagnier/RTIMULib2.git
+cd RTIMULib2/Linux/python
+python3 setup.py build
+sudo python3 setup.py install
 ```
 
 ```
@@ -25,6 +29,12 @@ sudo systemctl enable button_shutdown.service
 sudo cp etc/systemd/system/bmp280poller.service /etc/systemd/system/
 chmod +x /home/pi/GPSTracker/gps_tracker/bmp280_poller.py
 sudo systemctl enable bmp280poller.service
+```
+
+```
+sudo cp etc/systemd/system/imupoller.service /etc/systemd/system/
+chmod +x /home/pi/GPSTracker/gps_tracker/imu_poller.py
+sudo systemctl enable imupoller.service
 ```
 
 ```

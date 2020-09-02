@@ -13,8 +13,9 @@ redis_connection = redis.Redis(decode_responses=True)
 egm2008_path = '/home/pi/egm2008/egm2008-1.pgm'
 gh = geoid.GeoidHeight(egm2008_path)
 pressure_history = deque(maxlen=50)
+imu_history = deque(maxlen=500)
 _pubsub = redis_connection.pubsub()
-_pubsub.subscribe(['gps', 'bmp280'])
+_pubsub.subscribe(['gps', 'bmp280', 'imu'])
 old_location = None
 old_utc = None
 old_pressure = None
@@ -53,6 +54,8 @@ for item in _pubsub.listen():
         continue
     if item['channel'] == 'bmp280':
         pressure_history.append(json.loads(item['data']))
+    elif item['channel'] == 'imu':
+        imu_history.append(json.loads(item['data']))
     elif item['channel'] == 'gps':
         data = json.loads(item['data'])
         utc = data.get('utc')
@@ -64,6 +67,11 @@ for item in _pubsub.listen():
             pressure_data = pressure_history.popleft()
             if pressure_data['p_utc'] > data['utc'] - 0.08:
                 data.update(pressure_data)
+                break
+        while len(imu_history) > 0:
+            imu_data = imu_history.popleft()
+            if imu_data['i_utc'] > data['utc'] - 0.004:
+                data.update(imu_data)
                 break
         hdop = data.get('hdop')
         if hdop is not None:
