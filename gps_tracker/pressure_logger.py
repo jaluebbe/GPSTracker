@@ -8,12 +8,15 @@ from collections import deque
 from time import localtime, sleep, strftime, time, strptime
 pressure_history = deque(maxlen=500)
 _pubsub = redis_connection.pubsub()
-_pubsub.subscribe(['bmp280', 'transfer_data'])
+_pubsub.subscribe(['bmp280', 'bme280', 'transfer_data'])
 #ca 17/min with 0.05s
-last_record = None
-old_pressure = None
+last_record = 0
+last_log = 0
+old_pressure = 0
 last_transfer = None
+log_altitude = False
 log_pressure = False
+
 
 for item in _pubsub.listen():
     if not item[u'type'] == 'message':
@@ -26,20 +29,22 @@ for item in _pubsub.listen():
     data = json.loads(item['data'])
     pressure_history.append(data['pressure'])
     now = time()
-    if last_record is None or last_record < now - 5:
+    if last_record < now - 5:
         pressure_data = {
             'pressure': int(round(np.mean(pressure_history))),
             'temperature': round(data['temperature'], 1),
             'utc': int(round(now)),
             'hostname': data['hostname']}
-        if log_pressure:
-            key = 'pressure_log:{}:{}'.format(data['hostname'],
+        if item['channel'] == 'bme280':
+            pressure_data['humidity'] = int(round(data['humidity']))
+        if log_pressure and last_log < now - 60:
+            key = 'pressure:{}:{}'.format(data['hostname'],
                                               strftime("%Y%m"))
             redis_connection.lpush(key, json.dumps(pressure_data))
+            last_log = now
         redis_connection.set('current_pressure', json.dumps(pressure_data))
         last_record = now
-    if old_pressure is None or np.abs(np.diff([data['pressure'], old_pressure])
-            ) > 5:
+    if log_altitude and np.abs(np.diff([data['pressure'], old_pressure])) > 5:
         key = 'altitude:{}:{}'.format(data['hostname'], strftime("%Y%m%d"))
         redis_connection.lpush(key, json.dumps(data))
         old_pressure = data['pressure']
