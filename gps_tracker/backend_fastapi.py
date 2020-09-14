@@ -4,6 +4,7 @@ from starlette.responses import FileResponse
 from geojson import FeatureCollection, Feature, LineString
 import redis
 import json
+import ulf2_mock
 
 redis_connection = redis.Redis(decode_responses=True)
 app = FastAPI()
@@ -50,3 +51,13 @@ def get_geojson_dataset(id: str = Query(...,
     _features = [_feature]
     return [FeatureCollection(_features, properties={'summary': 'GPS altitude'}
         )]
+
+
+@app.get("/mock/ulf2/temperatures")
+def mock_ulf2_temperatures():
+    return ulf2_mock.get_temperatures()
+
+
+@app.get("/mock/ulf2/rpm")
+def mock_ulf2_rpm():
+    return ulf2_mock.get_rpm()
