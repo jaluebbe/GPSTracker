@@ -111,6 +111,9 @@ for item in _pubsub.listen():
                 data['pos_error'] = round(error, 2)
             else:
                 data['pos_error'] = float('nan')
+            ulf2_data = redis_connection.get('ulf2')
+            if ulf2_data is not None:
+                data['ulf2'] = json.loads(ulf2_data)
             redis_connection.publish('transfer_data', json.dumps(data))
             if dump_ignore_keys is not None:
                 for key in dump_ignore_keys:
