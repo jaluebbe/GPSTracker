@@ -18,6 +18,13 @@ legend.onAdd = function(map) {
 };
 legend.addTo(map);
 var hg;
+function adjustHeightgraphWidth() {
+    if (hg !== undefined) {
+        hg.resize({
+            width: window.innerWidth - 20
+        });
+    }
+}
 var geoJsonLayer = L.geoJson([]).addTo(map);
 function loadGeoJSON(fileName) {
     var xhr = new XMLHttpRequest();
@@ -30,7 +37,7 @@ function loadGeoJSON(fileName) {
             if (hg !== undefined)
                 hg.remove();
             hg = L.control.heightgraph({
-                width: 480,
+                width: window.innerWidth - 20,
                 height: 180,
                 margins: {
                     top: 10,
@@ -82,3 +89,4 @@ refreshTrackingIndex();
 document.getElementById("trackSelect").onchange = function() {
     loadGeoJSON(document.getElementById("trackSelect").value);
 };
+window.addEventListener('resize', adjustHeightgraphWidth);
