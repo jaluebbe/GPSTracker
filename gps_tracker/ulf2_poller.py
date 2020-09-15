@@ -14,7 +14,7 @@ def poll_ulf2():
     utc = time.time()
     ulf2_data = {}
     try:
-        temperatures = requests.get(temperatures_url, timeout=0.1).json()
+        temperatures = requests.get(temperatures_url, timeout=1).json()
     except requests.exceptions.ConnectTimeout:
         print(f'connection to {temperatures_url} timed out.')
     except requests.exceptions.ConnectionError:
@@ -25,7 +25,7 @@ def poll_ulf2():
             del temperatures['time']
             ulf2_data.update(temperatures)
     try:
-        rpm = requests.get(rpm_url, timeout=0.1).json()
+        rpm = requests.get(rpm_url, timeout=1).json()
     except requests.exceptions.ConnectTimeout:
         print(f'connection to {rpm_url} timed out.')
     except requests.exceptions.ConnectionError:
@@ -39,7 +39,7 @@ def poll_ulf2():
         ulf2_data['utc'] = round(utc, 1)
         redis_connection.set('ulf2', json.dumps(ulf2_data))
         redis_connection.expire('ulf2', 2)
-    time.sleep(1 - time.time() + utc)
+    time.sleep(max(0, 1 - time.time() + utc))
 
 
 if __name__ == '__main__':
