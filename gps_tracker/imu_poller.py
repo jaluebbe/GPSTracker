@@ -23,7 +23,7 @@ logging.info("IMU Name: " + imu.IMUName())
 
 if (not imu.IMUInit()):
     logging.error("IMU Init Failed")
-    sys.exit(1)
+    exit(1)
 else:
     logging.info("IMU Init Succeeded")
 
@@ -37,7 +37,7 @@ imu.setCompassEnable(False)
 poll_interval = imu.IMUGetPollInterval()
 logging.info("Recommended Poll Interval: %dmS\n" % poll_interval)
 
-def poll_imu():
+def poll_imu(counter=0):
     if imu.IMURead():
         timestamp = time.time()
         fusion_data = imu.getFusionData()
@@ -46,11 +46,14 @@ def poll_imu():
             'roll': round(math.degrees(fusion_data[0]), 1),
             'pitch': round(math.degrees(fusion_data[1]), 1),
         }
-        redis_connection.publish('imu', json.dumps(sensor_data))
+        if counter % 20 == 0:
+            redis_connection.publish('imu', json.dumps(sensor_data))
         time.sleep(poll_interval / 1e3)
 
 
 if __name__ == '__main__':
 
+    counter = 0
     while True:
-        poll_imu()
+        poll_imu(counter)
+        counter += 1
