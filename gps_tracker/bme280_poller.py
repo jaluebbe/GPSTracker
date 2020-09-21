@@ -10,7 +10,8 @@ redis_connection = redis.Redis()
 
 class Bme280:
 
-    def __init__(self):
+    def __init__(self, i2c_address=0x76):
+        self.i2c_address = i2c_address
         self.initialize_sensor()
         self.hostname = socket.gethostname()
         # ensure that the sensor is really initialized to avoid false data?
@@ -22,7 +23,7 @@ class Bme280:
 
         # BME280 address, 0x76
         # Read data back from 0x88(136), 24 bytes
-        b1 = self.bus.read_i2c_block_data(0x76, 0x88, 24)
+        b1 = self.bus.read_i2c_block_data(self.i2c_address, 0x88, 24)
 
         # Convert the data
         # Temp coefficents
@@ -63,11 +64,11 @@ class Bme280:
 
         # BME280 address, 0x76(118)
         # Read data back from 0xA1(161), 1 byte
-        self.dig_H1 = self.bus.read_byte_data(0x76, 0xA1)
+        self.dig_H1 = self.bus.read_byte_data(self.i2c_address, 0xA1)
 
         # BME280 address, 0x76(118)
         # Read data back from 0xE1(225), 7 bytes
-        b1 = self.bus.read_i2c_block_data(0x76, 0xE1, 7)
+        b1 = self.bus.read_i2c_block_data(self.i2c_address, 0xE1, 7)
 
         # Convert the data
         # Humidity coefficients
@@ -88,19 +89,19 @@ class Bme280:
         # BME280 address, 0x76(118)
         # Select control humidity register, 0xF2(242)
         # Humidity Oversampling = 1
-        self.bus.write_byte_data(0x76, 0xF2, 0x01)
+        self.bus.write_byte_data(self.i2c_address, 0xF2, 0x01)
 
         # BME280 address, 0x76(118)
         # Select Control measurement register, 0xF4(244)
         # Normal mode
         # Pressure Oversampling rate = 16
         # Temperature Oversampling rate = 2
-        self.bus.write_byte_data(0x76, 0xF4, 0x57)
+        self.bus.write_byte_data(self.i2c_address, 0xF4, 0x57)
 
         # BME280 address, 0x76(118)
         # Select Configuration register, 0xF5(245)
         # Stand_by time = 0.5 ms, IIR filter coefficient 16
-        self.bus.write_byte_data(0x76, 0xF5, 0x10)
+        self.bus.write_byte_data(self.i2c_address, 0xF5, 0x10)
         time.sleep(0.5)
 
     def get_sensor_data(self):
@@ -109,7 +110,7 @@ class Bme280:
         # Read data back from 0xF7(247), 8 bytes
         # Pressure MSB, Pressure LSB, Pressure xLSB, Temperature MSB,
         # Temperature LSB, Temperature xLSB, Humidity MSB, Humidity LSB
-        data = self.bus.read_i2c_block_data(0x76, 0xF7, 8)
+        data = self.bus.read_i2c_block_data(self.i2c_address, 0xF7, 8)
 
         # Convert pressure and temperature data to 19-bits
         adc_p = ((data[0] * 65536) + (data[1] * 256) + (data[2] & 0xF0)) / 16
