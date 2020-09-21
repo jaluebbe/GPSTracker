@@ -48,12 +48,14 @@ def poll_imu(counter=0):
         }
         if counter % 20 == 0:
             redis_connection.publish('imu', json.dumps(sensor_data))
-        time.sleep(poll_interval / 1e3)
+        return counter + 1
+    return counter
 
 
 if __name__ == '__main__':
 
     counter = 0
     while True:
-        poll_imu(counter)
-        counter += 1
+        counter = poll_imu(counter)
+        time.sleep(poll_interval / 1e3)
+
