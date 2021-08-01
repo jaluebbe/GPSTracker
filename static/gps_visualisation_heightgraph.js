@@ -9,7 +9,10 @@ legend.onAdd = function(map) {
         '<option value="real_tracking_data.json">real data</option>' +
         '<option value="airbus_tree.json">Airbus tree</option>' +
         '</select></td></tr>' +
-        '</table>';
+        '</table>' +
+        '<input type="checkbox" id="showGpsAltitude"><label for="showGpsAltitude">GPS altitude</label><br>' +
+        '<input type="checkbox" id="showPressureAltitude" checked><label for="showPressureAltitude">pressure altitude</label><br>'+
+        '<button onclick="loadTrackingData();">reload data</button>';
     L.DomEvent.on(div, 'click', function(ev) {
         L.DomEvent.stopPropagation(ev);
     });
@@ -28,7 +31,9 @@ function adjustHeightgraphWidth() {
 var geoJsonLayer = L.geoJson([]).addTo(map);
 function loadGeoJSON(fileName) {
     var xhr = new XMLHttpRequest();
-    xhr.open('GET', fileName);
+    xhr.open('GET', fileName +
+        '?show_gps_altitude=' + document.getElementById("showGpsAltitude").checked +
+        '&show_pressure_altitude=' + document.getElementById("showPressureAltitude").checked);
     xhr.setRequestHeader('Content-Type', 'application/json');
     xhr.onload = function() {
         map.spin(false);
@@ -51,8 +56,10 @@ function loadGeoJSON(fileName) {
             hg.addTo(map);
             hg.addData(geojson);
             geoJsonLayer.clearLayers();
-            geoJsonLayer.addData(geojson);
-            map.fitBounds(geoJsonLayer.getBounds());
+            if (geojson.length > 0) {
+                geoJsonLayer.addData(geojson);
+                map.fitBounds(geoJsonLayer.getBounds());
+            }
         }
     };
     map.spin(true);
@@ -86,7 +93,10 @@ function refreshTrackingIndex() {
 }
 
 refreshTrackingIndex();
-document.getElementById("trackSelect").onchange = function() {
+function loadTrackingData() {
     loadGeoJSON(document.getElementById("trackSelect").value);
+}
+document.getElementById("trackSelect").onchange = function() {
+    loadTrackingData();
 };
 window.addEventListener('resize', adjustHeightgraphWidth);
