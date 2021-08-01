@@ -5,11 +5,11 @@ import time
 import json
 import socket
 import redis
+
 redis_connection = redis.Redis()
 
 
 class Bmp280:
-
     def __init__(self, i2c_address=0x77):
         self.i2c_address = i2c_address
         self.initialize_sensor()
@@ -88,8 +88,10 @@ class Bmp280:
 
         # Temperature offset calculations
         var1 = (adc_t / 16384.0 - self.dig_T1 / 1024.0) * self.dig_T2
-        var2 = ((adc_t / 131072.0 - self.dig_T1 / 8192.0) *
-            (adc_t/131072.0 - self.dig_T1/8192.0)) * self.dig_T3
+        var2 = (
+            (adc_t / 131072.0 - self.dig_T1 / 8192.0)
+            * (adc_t / 131072.0 - self.dig_T1 / 8192.0)
+        ) * self.dig_T3
         t_fine = var1 + var2
         c_temp = (var1 + var2) / 5120.0
 
@@ -97,25 +99,28 @@ class Bmp280:
         var1 = t_fine / 2.0 - 64000.0
         var2 = var1 * var1 * self.dig_P6 / 32768.0
         var2 = var2 + var1 * self.dig_P5 * 2.0
-        var2 = var2/4.0 + self.dig_P4*65536.0
-        var1 = (self.dig_P3 * var1 * var1 / 524288.0 + self.dig_P2 * var1) / \
-            524288.0
+        var2 = var2 / 4.0 + self.dig_P4 * 65536.0
+        var1 = (
+            self.dig_P3 * var1 * var1 / 524288.0 + self.dig_P2 * var1
+        ) / 524288.0
         var1 = (1.0 + var1 / 32768.0) * self.dig_P1
         p = 1048576.0 - adc_p
-        p = (p - var2/4096.0) * 6250.0 / var1
+        p = (p - var2 / 4096.0) * 6250.0 / var1
         var1 = self.dig_P9 * p * p / 2147483648.0
         var2 = p * self.dig_P8 / 32768.0
-        pressure = (p + (var1 + var2 + self.dig_P7) / 16.0)
+        pressure = p + (var1 + var2 + self.dig_P7) / 16.0
         return {
-            'temperature': round(c_temp, 3), 'pressure': round(pressure, 2),
-            'p_utc': round(timestamp, 2), 'hostname': self.hostname
+            "temperature": round(c_temp, 3),
+            "pressure": round(pressure, 2),
+            "p_utc": round(timestamp, 2),
+            "hostname": self.hostname,
         }
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
 
     sensor = Bmp280()
     while True:
         sensor_data = sensor.get_sensor_data()
-        redis_connection.publish('bmp280', json.dumps(sensor_data))
+        redis_connection.publish("bmp280", json.dumps(sensor_data))
         time.sleep(0.08)

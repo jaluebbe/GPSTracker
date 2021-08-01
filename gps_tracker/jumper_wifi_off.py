@@ -4,10 +4,11 @@ import os
 from syslog import syslog
 
 import RPi.GPIO as GPIO
+
 GPIO.setmode(GPIO.BCM)  # Set pin numbering to board numbering
 GPIO.setup(21, GPIO.IN, pull_up_down=GPIO.PUD_UP)  # Setup pin 21 as an input
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     wifi_disabled = False
     while True:
         if GPIO.input(21) == 0 and not wifi_disabled:
