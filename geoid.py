@@ -20,8 +20,10 @@ import os
 import mmap
 import struct
 
+
 class GeoidBadDataFile(Exception):
     pass
+
 
 class GeoidHeight(object):
     """Calculate the height of the WGS84 geoid above the
@@ -30,52 +32,53 @@ class GeoidHeight(object):
     :param name: name to PGM file containing model info
     download from http://geographiclib.sourceforge.net/1.18/geoid.html
     """
+
     c0 = 240
     c3 = (
-        (  9, -18, -88,    0,  96,   90,   0,   0, -60, -20),
-        ( -9,  18,   8,    0, -96,   30,   0,   0,  60, -20),
-        (  9, -88, -18,   90,  96,    0, -20, -60,   0,   0),
-        (186, -42, -42, -150, -96, -150,  60,  60,  60,  60),
-        ( 54, 162, -78,   30, -24,  -90, -60,  60, -60,  60),
-        ( -9, -32,  18,   30,  24,    0,  20, -60,   0,   0),
-        ( -9,   8,  18,   30, -96,    0, -20,  60,   0,   0),
-        ( 54, -78, 162,  -90, -24,   30,  60, -60,  60, -60),
-        (-54,  78,  78,   90, 144,   90, -60, -60, -60, -60),
-        (  9,  -8, -18,  -30, -24,    0,  20,  60,   0,   0),
-        ( -9,  18, -32,    0,  24,   30,   0,   0, -60,  20),
-        (  9, -18,  -8,    0, -24,  -30,   0,   0,  60,  20),
+        (9, -18, -88, 0, 96, 90, 0, 0, -60, -20),
+        (-9, 18, 8, 0, -96, 30, 0, 0, 60, -20),
+        (9, -88, -18, 90, 96, 0, -20, -60, 0, 0),
+        (186, -42, -42, -150, -96, -150, 60, 60, 60, 60),
+        (54, 162, -78, 30, -24, -90, -60, 60, -60, 60),
+        (-9, -32, 18, 30, 24, 0, 20, -60, 0, 0),
+        (-9, 8, 18, 30, -96, 0, -20, 60, 0, 0),
+        (54, -78, 162, -90, -24, 30, 60, -60, 60, -60),
+        (-54, 78, 78, 90, 144, 90, -60, -60, -60, -60),
+        (9, -8, -18, -30, -24, 0, 20, 60, 0, 0),
+        (-9, 18, -32, 0, 24, 30, 0, 0, -60, 20),
+        (9, -18, -8, 0, -24, -30, 0, 0, 60, 20),
     )
 
     c0n = 372
     c3n = (
-        (  0, 0, -131, 0,  138,  144, 0,   0, -102, -31),
-        (  0, 0,    7, 0, -138,   42, 0,   0,  102, -31),
-        ( 62, 0,  -31, 0,    0,  -62, 0,   0,    0,  31),
-        (124, 0,  -62, 0,    0, -124, 0,   0,    0,  62),
-        (124, 0,  -62, 0,    0, -124, 0,   0,    0,  62),
-        ( 62, 0,  -31, 0,    0,  -62, 0,   0,    0,  31),
-        (  0, 0,   45, 0, -183,   -9, 0,  93,   18,   0),
-        (  0, 0,  216, 0,   33,   87, 0, -93,   12, -93),
-        (  0, 0,  156, 0,  153,   99, 0, -93,  -12, -93),
-        (  0, 0,  -45, 0,   -3,    9, 0,  93,  -18,   0),
-        (  0, 0,  -55, 0,   48,   42, 0,   0,  -84,  31),
-        (  0, 0,   -7, 0,  -48,  -42, 0,   0,   84,  31),
+        (0, 0, -131, 0, 138, 144, 0, 0, -102, -31),
+        (0, 0, 7, 0, -138, 42, 0, 0, 102, -31),
+        (62, 0, -31, 0, 0, -62, 0, 0, 0, 31),
+        (124, 0, -62, 0, 0, -124, 0, 0, 0, 62),
+        (124, 0, -62, 0, 0, -124, 0, 0, 0, 62),
+        (62, 0, -31, 0, 0, -62, 0, 0, 0, 31),
+        (0, 0, 45, 0, -183, -9, 0, 93, 18, 0),
+        (0, 0, 216, 0, 33, 87, 0, -93, 12, -93),
+        (0, 0, 156, 0, 153, 99, 0, -93, -12, -93),
+        (0, 0, -45, 0, -3, 9, 0, 93, -18, 0),
+        (0, 0, -55, 0, 48, 42, 0, 0, -84, 31),
+        (0, 0, -7, 0, -48, -42, 0, 0, 84, 31),
     )
 
     c0s = 372
     c3s = (
-        ( 18,  -36, -122,   0,  120,  135, 0,   0,  -84, -31),
-        (-18,   36,   -2,   0, -120,   51, 0,   0,   84, -31),
-        ( 36, -165,  -27,  93,  147,   -9, 0, -93,   18,   0),
-        (210,   45, -111, -93,  -57, -192, 0,  93,   12,  93),
-        (162,  141,  -75, -93, -129, -180, 0,  93,  -12,  93),
-        (-36,  -21,   27,  93,   39,    9, 0, -93,  -18,   0),
-        (  0,    0,   62,   0,    0,   31, 0,   0,    0, -31),
-        (  0,    0,  124,   0,    0,   62, 0,   0,    0, -62),
-        (  0,    0,  124,   0,    0,   62, 0,   0,    0, -62),
-        (  0,    0,   62,   0,    0,   31, 0,   0,    0, -31),
-        (-18,   36,  -64,   0,   66,   51, 0,   0, -102,  31),
-        ( 18,  -36,    2,   0,  -66,  -51, 0,   0,  102,  31),
+        (18, -36, -122, 0, 120, 135, 0, 0, -84, -31),
+        (-18, 36, -2, 0, -120, 51, 0, 0, 84, -31),
+        (36, -165, -27, 93, 147, -9, 0, -93, 18, 0),
+        (210, 45, -111, -93, -57, -192, 0, 93, 12, 93),
+        (162, 141, -75, -93, -129, -180, 0, 93, -12, 93),
+        (-36, -21, 27, 93, 39, 9, 0, -93, -18, 0),
+        (0, 0, 62, 0, 0, 31, 0, 0, 0, -31),
+        (0, 0, 124, 0, 0, 62, 0, 0, 0, -62),
+        (0, 0, 124, 0, 0, 62, 0, 0, 0, -62),
+        (0, 0, 62, 0, 0, 31, 0, 0, 0, -31),
+        (-18, 36, -64, 0, 66, 51, 0, 0, -102, 31),
+        (18, -36, 2, 0, -66, -51, 0, 0, 102, 31),
     )
 
     def __init__(self, name="egm2008-1.pgm"):
@@ -92,17 +95,17 @@ class GeoidHeight(object):
                 if len(line) == 0:
                     raise GeoidBadDataFile("EOF before end of file header")
                 headerlen += len(line)
-                if line.startswith(b'# Offset '):
+                if line.startswith(b"# Offset "):
                     try:
                         self.offset = int(line[9:])
                     except ValueError as e:
                         raise GeoidBadDataFile("Error reading offset", e)
-                elif line.startswith(b'# Scale '):
+                elif line.startswith(b"# Scale "):
                     try:
                         self.scale = float(line[8:])
                     except ValueError as e:
                         raise GeoidBadDataFile("Error reading scale", e)
-                elif not line.startswith(b'#'):
+                elif not line.startswith(b"#"):
                     try:
                         self.width, self.height = list(map(int, line.split()))
                     except ValueError as e:
@@ -137,18 +140,18 @@ class GeoidHeight(object):
 
     def _rawval(self, ix, iy):
         if iy < 0:
-            iy = -iy;
-            ix += self.width/2;
+            iy = -iy
+            ix += self.width / 2
         elif iy >= self.height:
-            iy = 2 * (self.height - 1) - iy;
-            ix += self.width/2;
+            iy = 2 * (self.height - 1) - iy
+            ix += self.width / 2
         if ix < 0:
-            ix += self.width;
+            ix += self.width
         elif ix >= self.width:
             ix -= self.width
 
-        return struct.unpack_from('>H', self.raw,
-                (iy * self.width + ix) * 2 + self.headerlen
+        return struct.unpack_from(
+            ">H", self.raw, (iy * self.width + ix) * 2 + self.headerlen
         )[0]
 
     def get(self, lat, lon, cubic=True):
@@ -168,23 +171,23 @@ class GeoidHeight(object):
             self.iy = iy
             if not cubic:
                 self.v00 = self._rawval(ix, iy)
-                self.v01 = self._rawval(ix+1, iy)
-                self.v10 = self._rawval(ix, iy+1)
-                self.v11 = self._rawval(ix+1, iy+1)
+                self.v01 = self._rawval(ix + 1, iy)
+                self.v10 = self._rawval(ix, iy + 1)
+                self.v11 = self._rawval(ix + 1, iy + 1)
             else:
                 v = (
-                    self._rawval(ix    , iy - 1),
+                    self._rawval(ix, iy - 1),
                     self._rawval(ix + 1, iy - 1),
-                    self._rawval(ix - 1, iy    ),
-                    self._rawval(ix    , iy    ),
-                    self._rawval(ix + 1, iy    ),
-                    self._rawval(ix + 2, iy    ),
+                    self._rawval(ix - 1, iy),
+                    self._rawval(ix, iy),
+                    self._rawval(ix + 1, iy),
+                    self._rawval(ix + 2, iy),
                     self._rawval(ix - 1, iy + 1),
-                    self._rawval(ix    , iy + 1),
+                    self._rawval(ix, iy + 1),
                     self._rawval(ix + 1, iy + 1),
                     self._rawval(ix + 2, iy + 1),
-                    self._rawval(ix    , iy + 2),
-                    self._rawval(ix + 1, iy + 2)
+                    self._rawval(ix, iy + 2),
+                    self._rawval(ix + 1, iy + 2),
                 )
                 if iy == 0:
                     c3x = GeoidHeight.c3n
@@ -196,7 +199,7 @@ class GeoidHeight(object):
                     c3x = GeoidHeight.c3
                     c0x = GeoidHeight.c0
                 self.t = [
-                    sum([ v[j] * c3x[j][i] for j in range(12) ]) / float(c0x)
+                    sum([v[j] * c3x[j][i] for j in range(12)]) / float(c0x)
                     for i in range(10)
                 ]
         if not cubic:
@@ -205,11 +208,13 @@ class GeoidHeight(object):
             h = (1 - fy) * a + fy * b
         else:
             h = (
-                self.t[0] +
-                fx * (self.t[1] + fx * (self.t[3] + fx * self.t[6])) +
-                fy * (
-                    self.t[2] + fx * (self.t[4] + fx * self.t[7]) +
-                        fy * (self.t[5] + fx * self.t[8] + fy * self.t[9])
+                self.t[0]
+                + fx * (self.t[1] + fx * (self.t[3] + fx * self.t[6]))
+                + fy
+                * (
+                    self.t[2]
+                    + fx * (self.t[4] + fx * self.t[7])
+                    + fy * (self.t[5] + fx * self.t[8] + fy * self.t[9])
                 )
             )
         return self.offset + self.scale * h
