@@ -2,7 +2,7 @@ import math
 import json
 import gps_tracker.distance_calculation as dc
 
-file_name = "real_tracking_data.json"
+file_name = "static/real_tracking_data.json"
 with open(file_name, "r") as f:
     data = json.load(f)
 distance = 0
