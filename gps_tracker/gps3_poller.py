@@ -2,7 +2,6 @@
 
 import logging
 from time import sleep
-from gps3 import gps3
 import json
 import redis
 import socket
@@ -25,9 +24,12 @@ def convert_lat_lon(json_msg, _my_gps):
 
 
 def poll_gpsd():
-    gpsd_socket = gps3.GPSDSocket()
-    gpsd_socket.connect()
-    gpsd_socket.watch(gpsd_protocol='nmea')
+    gpsd_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    gpsd_socket.connect(('localhost', 2947))
+    gpsd_stream = gpsd_socket.makefile(mode="rw")
+    logging.info(gpsd_stream.readline())
+    gpsd_stream.write('?WATCH={"enable":true, "nmea":true}\n')
+    gpsd_stream.flush()
     time_now = None
     json_msg = {'hostname': hostname, 'mode': 0}
     error_count = 0
@@ -35,7 +37,7 @@ def poll_gpsd():
         if error_count > 100:
             logging.warning('too many errors, reconnecting to gpsd...')
             break
-        new_data = gpsd_socket.next(timeout=1.0)
+        new_data = gpsd_stream.readline()
         if new_data is None or new_data == '':
             error_count += 1
             sleep(.05)

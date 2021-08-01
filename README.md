@@ -12,7 +12,7 @@ Raspberry Pi.
 sudo apt-get install python3-rpi.gpio python3-redis redis-server gpsd
 python3-pip git python3-numpy python3-smbus  # optional: chrony gpsd-clients
 sudo pip3 install git+https://github.com/inmcm/micropyGPS.git
-sudo pip3 install gps3 PyGeodesy fastapi uvicorn aiofiles geojson
+sudo pip3 install PyGeodesy fastapi uvicorn aiofiles geojson
 git clone https://github.com/seandepagnier/RTIMULib2.git
 cd RTIMULib2/Linux/python
 python3 setup.py build
