@@ -52,7 +52,7 @@ def get_distance(location1, location2):
 for item in _pubsub.listen():
     if not item[u'type'] == 'message':
         continue
-    if item['channel'] in ['bmp280', 'bme280']:
+    if item['channel'] in ['bmp280', 'bme280', 'bmp388']:
         pressure_history.append(json.loads(item['data']))
     elif item['channel'] == 'imu':
         imu_history.append(json.loads(item['data']))
