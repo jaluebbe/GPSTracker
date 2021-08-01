@@ -15,7 +15,7 @@ gh = geoid.GeoidHeight(egm2008_path)
 pressure_history = deque(maxlen=50)
 imu_history = deque(maxlen=50)
 _pubsub = redis_connection.pubsub()
-_pubsub.subscribe(['gps', 'bmp280', 'bme280', 'imu'])
+_pubsub.subscribe(['gps', 'bmp280', 'bme280', 'bmp388', 'imu'])
 old_location = None
 old_utc = None
 old_pressure = None
