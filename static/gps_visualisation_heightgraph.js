@@ -2,22 +2,20 @@ var legend = L.control({
     position: 'topright'
 });
 legend.onAdd = function(map) {
-    var div = L.DomUtil.create('div', 'info legend');
-    div.innerHTML =
-        '<table><tr><td>Choose data</td></tr><tr><td><select id="trackSelect">' +
+    this._div = L.DomUtil.create('div', 'info legend');
+    this._div.innerHTML =
+        '<div style="display: grid; grid-gap: 2px"><div>Choose data</div><div><select id="trackSelect">' +
         '<option selected value="artificial_tracking_data.json">artificial data</option>' +
         '<option value="real_tracking_data.json">real data</option>' +
         '<option value="airbus_tree.json">Airbus tree</option>' +
-        '</select></td></tr>' +
-        '</table>' +
-        '<input type="checkbox" id="showGpsAltitude"><label for="showGpsAltitude">GPS altitude</label><br>' +
-        '<input type="checkbox" id="showPressureAltitude" checked><label for="showPressureAltitude">pressure altitude</label><br>'+
-        '<button onclick="loadTrackingData();">reload data</button>';
-    L.DomEvent.on(div, 'click', function(ev) {
-        L.DomEvent.stopPropagation(ev);
-    });
-
-    return div;
+        '</select></div>' +
+        '<div><input type="radio" id="showGpsAltitude" name="selectSource"><label for="showGpsAltitude">GPS altitude</label></div>' +
+        '<div><input type="radio" id="showPressureAltitude" name="selectSource" checked><label for="showPressureAltitude">pressure altitude</label></div>'+
+        '<div><label for="refPressureInput">p<sub>ref</sub> (mbar)</label>' +
+        '<input type="number" id="refPressureInput" min="950" max="1050" value="1013.25" step="0.1"></div>' +
+        '<div><button onclick="loadTrackingData();">load data</button></div></div>';
+    L.DomEvent.disableClickPropagation(this._div);
+    return this._div;
 };
 legend.addTo(map);
 var hg;
@@ -33,7 +31,8 @@ function loadGeoJSON(fileName) {
     var xhr = new XMLHttpRequest();
     xhr.open('GET', fileName +
         '?show_gps_altitude=' + document.getElementById("showGpsAltitude").checked +
-        '&show_pressure_altitude=' + document.getElementById("showPressureAltitude").checked);
+        '&show_pressure_altitude=' + document.getElementById("showPressureAltitude").checked +
+        '&ref_pressure_mbar=' + document.getElementById("refPressureInput").value);
     xhr.setRequestHeader('Content-Type', 'application/json');
     xhr.onload = function() {
         map.spin(false);
@@ -87,7 +86,6 @@ function refreshTrackingIndex() {
                 trackSelect.options.add(opt);
             }
         }
-        loadGeoJSON(document.getElementById("trackSelect").value);
     };
     xhr.send();
 }
@@ -96,7 +94,4 @@ refreshTrackingIndex();
 function loadTrackingData() {
     loadGeoJSON(document.getElementById("trackSelect").value);
 }
-document.getElementById("trackSelect").onchange = function() {
-    loadTrackingData();
-};
 window.addEventListener('resize', adjustHeightgraphWidth);
