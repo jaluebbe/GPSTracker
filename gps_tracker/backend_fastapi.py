@@ -54,38 +54,46 @@ def get_geojson_dataset(
     id: str = Query(..., regex="^tracking_[a-z0-9]*_[0-9]{8}$"),
     show_pressure_altitude: bool = True,
     show_gps_altitude: bool = False,
+    ref_pressure_mbar: float = 1013.25,
 ):
     data = ",\n".join(
         redis_connection.lrange(id.replace("_", ":"), 0, -1)[::-1]
     )
     height_data = []
     tracking_data = json.loads(f"[{data}]")
-    _coords = [
-        [row["lon"], row["lat"], row["alt"]]
-        for row in tracking_data
-        if row.get("alt") is not None
-    ]
-    _feature = Feature(geometry=LineString(_coords))
-    _features = [_feature]
-    _feature_collection = FeatureCollection(
-        _features, properties={"summary": "GPS altitude"}
-    )
-    if show_gps_altitude and len(_coords) > 0:
-        height_data.append(_feature_collection)
-    _coords = [
-        [
-            row["lon"],
-            row["lat"],
-            round(calculate_pressure_altitude(row["pressure"]), 2),
+    if show_gps_altitude:
+        _coords = [
+            [row["lon"], row["lat"], row["alt"]]
+            for row in tracking_data
+            if row.get("alt") is not None
         ]
-        for row in tracking_data
-        if row.get("pressure") is not None
-    ]
-    _feature = Feature(geometry=LineString(_coords))
-    _features = [_feature]
-    _feature_collection = FeatureCollection(
-        _features, properties={"summary": "barometric altitude"}
-    )
-    if show_pressure_altitude and len(_coords) > 0:
-        height_data.append(_feature_collection)
+        _feature = Feature(geometry=LineString(_coords))
+        _features = [_feature]
+        _feature_collection = FeatureCollection(
+            _features, properties={"summary": "GPS altitude"}
+        )
+        if len(_coords) > 0:
+            height_data.append(_feature_collection)
+    if show_pressure_altitude:
+        _coords = [
+            [
+                row["lon"],
+                row["lat"],
+                round(
+                    calculate_pressure_altitude(
+                        pressure=row["pressure"], p0=ref_pressure_mbar * 100
+                    ),
+                    2,
+                ),
+            ]
+            for row in tracking_data
+            if row.get("pressure") is not None
+        ]
+        _feature = Feature(geometry=LineString(_coords))
+        _features = [_feature]
+        _feature_collection = FeatureCollection(
+            _features, properties={"summary": "barometric altitude"}
+        )
+        if len(_coords) > 0:
+            height_data.append(_feature_collection)
     return height_data
