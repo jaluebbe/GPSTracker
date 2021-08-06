@@ -55,7 +55,8 @@ def poll_gpsd():
                         json_msg["alt"] = None
                         json_msg["vdop"] = None
                         json_msg["pdop"] = None
-                    redis_connection.publish("gps", json.dumps(json_msg))
+                    if json_msg["mode"] > 1:
+                        redis_connection.publish("gps", json.dumps(json_msg))
                 json_msg = {"hostname": hostname, "mode": 0}
                 time_now = int(my_gps.fix_time)
             if result == "GPGGA":
@@ -87,23 +88,19 @@ def poll_gpsd():
                         "vdop": my_gps.vdop,
                         "pdop": my_gps.pdop,
                         "mode": my_gps.fix_type,
-                        "gps_status": my_gps.fix_stat,
                     }
                 )
                 error_count = 0
             elif result == "GPRMC":
                 """Parse Recommended Minimum Specific GPS/Transit data
-                (RMC)Sentence. Updates UTC timestamp, latitude, longitude,
+                (RMC) Sentence. Updates UTC timestamp, latitude, longitude,
                 Course, Speed, Date, and fix status """
                 json_msg.update(
                     {
-                        "utc": round(my_gps.fix_time, 2),
                         "track": my_gps.course,
-                        "gps_status": my_gps.fix_stat,
                         "speed": round(my_gps.speed[0] * knt_to_mps, 2),
                     }
                 )
-                convert_lat_lon(json_msg, my_gps)
                 error_count = 0
 
 
