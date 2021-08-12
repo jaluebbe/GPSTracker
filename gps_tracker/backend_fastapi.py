@@ -87,7 +87,7 @@ def get_geojson_dataset(
                 ),
             ]
             for row in tracking_data
-            if row.get("pressure") is not None
+            if row.get("pressure") is not None and row.get("alt") is not None
         ]
         _feature = Feature(geometry=LineString(_coords))
         _features = [_feature]
