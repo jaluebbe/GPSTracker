@@ -10,7 +10,7 @@ from time import localtime, sleep, strftime, time, strptime
 
 pressure_history = deque(maxlen=500)
 _pubsub = redis_connection.pubsub()
-_pubsub.subscribe(["bmp280", "bme280", "transfer_data"])
+_pubsub.subscribe(["bmp280", "bme280", "bmp388", "transfer_data"])
 # ca 17/min with 0.05s
 last_record = 0
 last_log = 0
