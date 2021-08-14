@@ -12,7 +12,7 @@ legend.onAdd = function(map) {
         '<div><input type="radio" id="showGpsAltitude" name="selectSource"><label for="showGpsAltitude">GPS altitude</label></div>' +
         '<div><input type="radio" id="showPressureAltitude" name="selectSource" checked><label for="showPressureAltitude">pressure altitude</label></div>'+
         '<div><label for="refPressureInput">p<sub>ref</sub> (mbar)</label>' +
-        '<input type="number" id="refPressureInput" min="950" max="1050" value="1013.25" step="0.1"></div>' +
+        '<input type="number" id="refPressureInput" min="950" max="1050" value="1013.2" step="0.1"></div>' +
         '<div><button onclick="loadTrackingData();">load data</button></div></div>';
     L.DomEvent.disableClickPropagation(this._div);
     return this._div;
