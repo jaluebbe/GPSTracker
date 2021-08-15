@@ -5,9 +5,6 @@ legend.onAdd = function(map) {
     this._div = L.DomUtil.create('div', 'info legend');
     this._div.innerHTML =
         '<div style="display: grid; grid-gap: 2px"><div>Choose data</div><div><select id="trackSelect">' +
-        '<option selected value="artificial_tracking_data.json">artificial data</option>' +
-        '<option value="real_tracking_data.json">real data</option>' +
-        '<option value="airbus_tree.json">Airbus tree</option>' +
         '</select></div>' +
         '<div><button onclick="loadTrackingData();">load data</button></div></div>';
     L.DomEvent.disableClickPropagation(this._div);
