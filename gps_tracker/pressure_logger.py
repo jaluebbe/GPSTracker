@@ -47,8 +47,6 @@ for item in _pubsub.listen():
                 data["hostname"], time.strftime("%Y%m")
             )
             redis_connection.lpush(key, json.dumps(pressure_data))
-        print("buffer length", len(pressure_buffer))
-        print(pressure_data)
         pressure_buffer.clear()
         buffer_time = utc_ceil_minute
     elif utc_ceil_minute > buffer_time and len(pressure_buffer) == 0:
