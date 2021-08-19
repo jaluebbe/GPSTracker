@@ -8,6 +8,7 @@ import redis
 redis_connection = redis.Redis(decode_responses=True)
 pressure_buffer = deque(maxlen=700)
 buffer_time = None
+pressure_data = None
 _pubsub = redis_connection.pubsub()
 _pubsub.subscribe(["bmp280", "bme280", "bmp388", "transfer_data"])
 old_pressure = 0
@@ -39,13 +40,8 @@ for item in _pubsub.listen():
         if item["channel"] == "bme280":
             pressure_data["humidity"] = int(round(data["humidity"]))
         redis_connection.set("current_pressure", json.dumps(pressure_data))
-        if (
-            log_pressure
-            and time.gmtime(buffer_time).tm_min in log_pressure_minutes
-        ):
-            key = "pressure:{}:{}".format(
-                data["hostname"], time.strftime("%Y%m")
-            )
+        if log_pressure and time.gmtime(buffer_time).tm_min in log_pressure_minutes:
+            key = "pressure:{}:{}".format(data["hostname"], time.strftime("%Y%m"))
             redis_connection.lpush(key, json.dumps(pressure_data))
         pressure_buffer.clear()
         buffer_time = utc_ceil_minute
@@ -54,9 +50,15 @@ for item in _pubsub.listen():
     pressure_buffer.append(data["pressure"])
     # add pressure values to altitude log if a significant pressure difference
     # occurs which was not considered by the tracking log.
-    if log_altitude and np.abs(np.diff([data["pressure"], old_pressure])) > 5:
+    # Ignore small deviations from the mean value.
+    # Skip logging if no mean value is available, yet.
+    if pressure_data is None:
+        pass
+    elif np.abs(np.diff([data["pressure"], pressure_data["pressure"]])) < 6:
+        pass
+    elif log_altitude and np.abs(np.diff([data["pressure"], old_pressure])) > 6:
         key = "altitude:{}:{}".format(data["hostname"], time.strftime("%Y%m%d"))
         redis_connection.lpush(key, json.dumps(data))
         old_pressure = data["pressure"]
-    time.sleep(0.1)
+    time.sleep(0.05)
     continue
