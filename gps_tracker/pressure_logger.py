@@ -40,8 +40,13 @@ for item in _pubsub.listen():
         if item["channel"] == "bme280":
             pressure_data["humidity"] = int(round(data["humidity"]))
         redis_connection.set("current_pressure", json.dumps(pressure_data))
-        if log_pressure and time.gmtime(buffer_time).tm_min in log_pressure_minutes:
-            key = "pressure:{}:{}".format(data["hostname"], time.strftime("%Y%m"))
+        if (
+            log_pressure
+            and time.gmtime(buffer_time).tm_min in log_pressure_minutes
+        ):
+            key = "pressure:{}:{}".format(
+                data["hostname"], time.strftime("%Y%m")
+            )
             redis_connection.lpush(key, json.dumps(pressure_data))
         pressure_buffer.clear()
         buffer_time = utc_ceil_minute
