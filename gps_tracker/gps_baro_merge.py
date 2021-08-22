@@ -26,7 +26,6 @@ max_dist = 8
 status_threshold = 1
 h_uere_no_dgps = 15.0
 dump_ignore_keys = [
-    "status",
     "map_height",
     "map_type",
     "mode",
@@ -41,7 +40,6 @@ dump_ignore_keys = [
     "epy",
     "epv",
     "ept",
-    "my_status",
     "tag",
     "device",
     "class",
@@ -109,7 +107,7 @@ for item in _pubsub.listen():
             status = 1
         elif (
             data.get("pressure") is not None
-            and np.abs(np.diff([data["pressure"], old_pressure])) > 5
+            and np.abs(np.diff([data["pressure"], old_pressure])) > 10
         ):
             status = 4
         else:

@@ -12,6 +12,7 @@ pressure_data = None
 _pubsub = redis_connection.pubsub()
 _pubsub.subscribe(["bmp280", "bme280", "bmp388", "transfer_data"])
 old_pressure = 0
+old_pressure_utc = 0
 log_altitude = True
 log_pressure = True
 log_pressure_minutes = [20, 50]
@@ -22,7 +23,9 @@ for item in _pubsub.listen():
     # the last transfer_data message represents the last data dump to Redis.
     if item["channel"] == "transfer_data":
         _transfer_data = json.loads(item["data"])
-        old_pressure = _transfer_data["pressure"]
+        if _transfer_data["utc"] > old_pressure_utc:
+            old_pressure = _transfer_data["pressure"]
+            old_pressure_utc = _transfer_data["utc"]
         continue
     data = json.loads(item["data"])
     utc = data["p_utc"]
@@ -53,17 +56,23 @@ for item in _pubsub.listen():
     elif utc_ceil_minute > buffer_time and len(pressure_buffer) == 0:
         buffer_time = utc_ceil_minute
     pressure_buffer.append(data["pressure"])
-    # add pressure values to altitude log if a significant pressure difference
+    # Add pressure values to altitude log if a significant pressure difference
     # occurs which was not considered by the tracking log.
     # Ignore small deviations from the mean value.
     # Skip logging if no mean value is available, yet.
+    # Don't log more frequently than one second.
     if pressure_data is None:
         pass
-    elif np.abs(np.diff([data["pressure"], pressure_data["pressure"]])) < 6:
+    elif data["p_utc"] < old_pressure_utc + 1:
         pass
-    elif log_altitude and np.abs(np.diff([data["pressure"], old_pressure])) > 6:
+    elif np.abs(np.diff([data["pressure"], pressure_data["pressure"]])) < 10:
+        pass
+    elif (
+        log_altitude and np.abs(np.diff([data["pressure"], old_pressure])) > 10
+    ):
         key = "altitude:{}:{}".format(data["hostname"], time.strftime("%Y%m%d"))
         redis_connection.lpush(key, json.dumps(data))
         old_pressure = data["pressure"]
+        old_pressure_utc = data["p_utc"]
     time.sleep(0.05)
     continue
