@@ -12,11 +12,7 @@ Raspberry Pi.
 sudo apt-get install python3-rpi.gpio python3-redis redis-server gpsd
 python3-pip git python3-numpy python3-smbus  # optional: chrony gpsd-clients
 sudo pip3 install git+https://github.com/inmcm/micropyGPS.git
-sudo pip3 install PyGeodesy fastapi uvicorn aiofiles geojson
-git clone https://github.com/seandepagnier/RTIMULib2.git
-cd RTIMULib2/Linux/python
-python3 setup.py build
-sudo python3 setup.py install
+sudo pip3 install PyGeodesy fastapi uvicorn aiofiles geojson ahrs
 ```
 
 ```
@@ -29,12 +25,6 @@ sudo systemctl enable button_shutdown.service
 sudo cp etc/systemd/system/bmp280poller.service /etc/systemd/system/
 chmod +x /home/pi/GPSTracker/gps_tracker/bmp280_poller.py
 sudo systemctl enable bmp280poller.service
-```
-
-```
-sudo cp etc/systemd/system/imupoller.service /etc/systemd/system/
-chmod +x /home/pi/GPSTracker/gps_tracker/imu_poller.py
-sudo systemctl enable imupoller.service
 ```
 
 ```
@@ -57,6 +47,23 @@ sudo systemctl enable pressurelogger.service
 Download egm2008-1 as ZIP file from one of the locations listed at 
 https://geographiclib.sourceforge.io/1.18/geoid.html and put egm2008-1.pgm 
 in /home/pi/egm2008/ .
+
+Optional, if using an LSM303D sensor:
+```
+sudo cp etc/systemd/system/lsm303d_poller.service /etc/systemd/system/
+chmod +x /home/pi/GPSTracker/gps_tracker/lsm303d_poller.py
+sudo systemctl enable lsm303d_poller.service
+```
+Otherwise, if using any IMU which is supported by RTIMULib2:
+```
+git clone https://github.com/seandepagnier/RTIMULib2.git
+cd RTIMULib2/Linux/python
+python3 setup.py build
+sudo python3 setup.py install
+sudo cp etc/systemd/system/imupoller.service /etc/systemd/system/
+chmod +x /home/pi/GPSTracker/gps_tracker/imu_poller.py
+sudo systemctl enable imupoller.service
+```
 
 #### Data transfer to web page (optional)
 ```
