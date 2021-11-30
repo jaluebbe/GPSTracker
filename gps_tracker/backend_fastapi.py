@@ -1,11 +1,11 @@
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, HTTPException, Query, WebSocket
 from starlette.staticfiles import StaticFiles
 from starlette.responses import FileResponse
 from geojson import FeatureCollection, Feature, LineString
-import redis
+import aioredis
 import json
 
-redis_connection = redis.Redis(decode_responses=True)
+redis_connection = aioredis.Redis(decode_responses=True)
 app = FastAPI()
 
 app.mount("/static", StaticFiles(directory="../static"), name="static")
@@ -23,42 +23,41 @@ async def root():
 
 
 @app.get("/api/current_pressure")
-def get_current_pressure():
-    pressure_data = redis_connection.get("current_pressure")
+async def get_current_pressure():
+    pressure_data = await redis_connection.get("current_pressure")
     if pressure_data is None:
         raise HTTPException(status_code=404, detail="no data available")
     return json.loads(pressure_data)
 
 
 @app.get("/api/available_datasets")
-def get_available_datasets(
+async def get_available_datasets(
     category: str = Query("*", regex="^[*a-z0-9]*$"),
     date: str = Query("*", max_length=8, regex="^[*0-9]*$"),
 ):
-    return [
+    datasets = [
         key.replace(":", "_")
-        for key in redis_connection.scan_iter(f"{category}:*:{date}")
+        async for key in redis_connection.scan_iter(f"{category}:*:{date}")
     ]
+    return datasets
 
 
 @app.get("/api/dataset/{id}.json")
-def get_dataset(id):
-    data = ",\n".join(
-        redis_connection.lrange(id.replace("_", ":"), 0, -1)[::-1]
-    )
+async def get_dataset(id):
+    reversed_data = await redis_connection.lrange(id.replace("_", ":"), 0, -1)
+    data = ",\n".join(reversed_data[::-1])
     return json.loads(f"[{data}]")
 
 
 @app.get("/api/dataset/{id}.geojson")
-def get_geojson_dataset(
+async def get_geojson_dataset(
     id: str = Query(..., regex="^tracking_[a-z0-9]*_[0-9]{8}$"),
     show_pressure_altitude: bool = True,
     show_gps_altitude: bool = False,
     ref_pressure_mbar: float = 1013.25,
 ):
-    data = ",\n".join(
-        redis_connection.lrange(id.replace("_", ":"), 0, -1)[::-1]
-    )
+    reversed_data = await redis_connection.lrange(id.replace("_", ":"), 0, -1)
+    data = ",\n".join(reversed_data[::-1])
     height_data = []
     tracking_data = json.loads(f"[{data}]")
     if show_gps_altitude:
