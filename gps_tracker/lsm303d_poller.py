@@ -93,7 +93,7 @@ class Lsm303d:
         roll, pitch, yaw = Tilt(self.get_acceleration(), as_angles=True).Q[0]
         sensor_data = {
             "hostname": self.hostname,
-            "i_utc": round(timestamp, 2),
+            "i_utc": round(timestamp, 3),
             "roll": round(roll, 1),
             "pitch": round(pitch, 1),
         }

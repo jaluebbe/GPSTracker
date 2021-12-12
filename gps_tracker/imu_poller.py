@@ -44,7 +44,7 @@ def poll_imu(counter=0):
         fusion_data = imu.getFusionData()
         sensor_data = {
             "hostname": hostname,
-            "i_utc": round(timestamp, 2),
+            "i_utc": round(timestamp, 3),
             "roll": round(math.degrees(fusion_data[0]), 1),
             "pitch": round(math.degrees(fusion_data[1]), 1),
         }
