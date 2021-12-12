@@ -1,9 +1,12 @@
-from fastapi import FastAPI, HTTPException, Query, WebSocket
+from fastapi import FastAPI, HTTPException, Query, WebSocket, status
 from starlette.staticfiles import StaticFiles
 from starlette.responses import FileResponse
 from geojson import FeatureCollection, Feature, LineString
 import aioredis
+import websockets
 import json
+import asyncio
+import logging
 
 redis_connection = aioredis.Redis(decode_responses=True)
 app = FastAPI()
@@ -96,3 +99,27 @@ async def get_geojson_dataset(
         if len(_coords) > 0:
             height_data.append(_feature_collection)
     return height_data
+
+
+@app.websocket("/ws/{channel}")
+async def websocket_endpoint(websocket: WebSocket, channel: str):
+    await websocket.accept()
+    if channel not in ["imu", "gps", "bmp280", "bmp388", "transfer_data"]:
+        await websocket.close(code=status.WS_1003_UNSUPPORTED_DATA)
+        return
+    pubsub = redis_connection.pubsub(ignore_subscribe_messages=True)
+    await pubsub.subscribe([channel])
+    while True:
+        try:
+            message = await pubsub.get_message()
+            if message is not None:
+                await websocket.send_text(message["data"])
+            await asyncio.sleep(0.01)
+        except asyncio.TimeoutError:
+            pass
+        except websockets.exceptions.ConnectionClosedError:
+            logging.exception("abnormal closure of websocket connection.")
+            break
+        except websockets.exceptions.ConnectionClosedOK:
+            # normal closure with close code 1000
+            break
