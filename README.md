@@ -2,11 +2,11 @@
 Use a Raspberry Pi with a GPS receiver and a pressure sensor. 
 Tracking data from this setup and other sources can be visualised using 
 Leaflet.js and several plugins. 
+Optional, orientation data from an IMU may be recorded (work in progress).
 
 ## GPS tracking
-The code for GPS tracking using a Raspberry Pi will follow later. It is
-assumed that you are using Raspbian (Lite version) as operating system on your 
-Raspberry Pi. 
+It is assumed that you are using Raspberry Pi OS (Lite version) on your 
+Raspberry Pi.
 ### Setup and requirements
 ```
 sudo apt-get install python3-rpi.gpio python3-redis redis-server gpsd
@@ -19,12 +19,6 @@ sudo pip3 install PyGeodesy fastapi uvicorn aiofiles geojson ahrs
 sudo cp etc/systemd/system/button_shutdown.service /etc/systemd/system/
 chmod +x /home/pi/GPSTracker/gps_tracker/button_shutdown.py
 sudo systemctl enable button_shutdown.service
-```
-
-```
-sudo cp etc/systemd/system/bmp280poller.service /etc/systemd/system/
-chmod +x /home/pi/GPSTracker/gps_tracker/bmp280_poller.py
-sudo systemctl enable bmp280poller.service
 ```
 
 ```
@@ -47,6 +41,20 @@ sudo systemctl enable pressurelogger.service
 Download egm2008-1 as ZIP file from one of the locations listed at 
 https://geographiclib.sourceforge.io/1.18/geoid.html and put egm2008-1.pgm 
 in /home/pi/egm2008/ .
+
+To use a BMP280 pressure sensor:
+```
+sudo cp etc/systemd/system/bmp280poller.service /etc/systemd/system/
+chmod +x /home/pi/GPSTracker/gps_tracker/bmp280_poller.py
+sudo systemctl enable bmp280poller.service
+```
+
+To use a BMP388 pressure sensor:
+```
+sudo cp etc/systemd/system/bmp388poller.service /etc/systemd/system/
+chmod +x /home/pi/GPSTracker/gps_tracker/bmp388_poller.py
+sudo systemctl enable bmp388poller.service
+```
 
 Optional, if using an LSM303D sensor:
 ```
