@@ -42,7 +42,6 @@ for item in _pubsub.listen():
         }
         if item["channel"] == "bme280":
             pressure_data["humidity"] = int(round(data["humidity"]))
-        redis_connection.set("current_pressure", json.dumps(pressure_data))
         if (
             log_pressure
             and time.gmtime(buffer_time).tm_min in log_pressure_minutes

@@ -15,9 +15,22 @@ app.mount("/static", StaticFiles(directory="../static"), name="static")
 
 # calculate barometric altitude based on the following formula:
 # https://www.weather.gov/media/epz/wxcalc/pressureAltitude.pdf
-def calculate_pressure_altitude(pressure, p0=101_325):
+def _calculate_pressure_altitude(pressure, p0=101_325):
     altitude = 0.3048 * 145_366.45 * (1 - pow(pressure / p0, 0.190_284))
     return altitude
+
+
+async def _get_channel_data(channels):
+    pubsub = redis_connection.pubsub(ignore_subscribe_messages=True)
+    await pubsub.subscribe(channels)
+    while True:
+        message = await pubsub.get_message()
+        if message is not None:
+            _channel = message["channel"]
+            _data = json.loads(message["data"])
+            _data["channel"] = _channel
+            return _data
+        await asyncio.sleep(0.01)
 
 
 @app.get("/", include_in_schema=False)
@@ -27,10 +40,24 @@ async def root():
 
 @app.get("/api/current_pressure")
 async def get_current_pressure():
-    pressure_data = await redis_connection.get("current_pressure")
-    if pressure_data is None:
+    channels = ["bme280", "bmp280", "bmp388"]
+    try:
+        pressure_data = await asyncio.wait_for(_get_channel_data(channels), 0.2)
+    except asyncio.TimeoutError:
+        logging.exception("/api/current_pressure")
         raise HTTPException(status_code=404, detail="no data available")
-    return json.loads(pressure_data)
+    return pressure_data
+
+
+@app.get("/api/current_orientation")
+async def get_current_orientation():
+    channels = ["imu"]
+    try:
+        imu_data = await asyncio.wait_for(_get_channel_data(channels), 0.2)
+    except asyncio.TimeoutError:
+        logging.exception("/api/current_orientation")
+        raise HTTPException(status_code=404, detail="no data available")
+    return imu_data
 
 
 @app.get("/api/available_datasets")
@@ -82,7 +109,7 @@ async def get_geojson_dataset(
                 row["lon"],
                 row["lat"],
                 round(
-                    calculate_pressure_altitude(
+                    _calculate_pressure_altitude(
                         pressure=row["pressure"], p0=ref_pressure_mbar * 100
                     ),
                     2,
@@ -103,8 +130,16 @@ async def get_geojson_dataset(
 
 @app.websocket("/ws/{channel}")
 async def websocket_endpoint(websocket: WebSocket, channel: str):
+    supported_channels = [
+        "imu",
+        "gps",
+        "bme280",
+        "bmp280",
+        "bmp388",
+        "transfer_data",
+    ]
     await websocket.accept()
-    if channel not in ["imu", "gps", "bmp280", "bmp388", "transfer_data"]:
+    if channel not in supported_channels:
         await websocket.close(code=status.WS_1003_UNSUPPORTED_DATA)
         return
     pubsub = redis_connection.pubsub(ignore_subscribe_messages=True)
