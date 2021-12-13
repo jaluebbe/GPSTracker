@@ -90,14 +90,15 @@ class Lsm303d:
 
     def get_sensor_data(self):
         timestamp = time.time()
-        roll, pitch, yaw = Tilt(self.get_acceleration(), as_angles=True).Q[0]
+        roll, pitch, yaw = Tilt(
+            self.get_acceleration() * [1, -1, 1], as_angles=True
+        ).Q[0]
         sensor_data = {
             "hostname": self.hostname,
             "i_utc": round(timestamp, 3),
             "roll": round(roll, 1),
             "pitch": round(pitch, 1),
         }
-        print(sensor_data)
         return sensor_data
 
 
