@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8" />
+    <title>magnetometer raw data</title>
+    <style>
+        html,
+        body {
+            height: 100%;
+            margin: 0;
+        }
+
+        #myGraph {
+            min-height: 400px;
+            height: 100%;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="myGraph"></div>
+    <script src="https://cdn.plot.ly/plotly-2.7.0.min.js" integrity="sha384-ylbm/cboOM330KlAJxfWacxZ1uL4kXrhRneA2p3i2tXdGXh4ZTJAN748MzFfppie" crossorigin="anonymous"></script>
+    <script>
+        var ws = undefined;
+        var myGraph = document.getElementById('myGraph');
+        var trace1 = {
+            x: [],
+            y: [],
+            z: [],
+            mode: 'markers',
+            marker: {
+                size: 5,
+                opacity: 0.5
+            },
+            type: 'scatter3d'
+        };
+        var trace2 = {
+            x: [],
+            y: [],
+            z: [],
+            mode: 'markers',
+            marker: {
+                size: 10,
+                color: 'red'
+            },
+            type: 'scatter3d'
+        };
+        var data = [trace1, trace2];
+        var layout = {
+            showlegend: false,
+            title: 'Magnetometer raw data',
+            font: {
+                size: 14,
+            },
+        };
+        var config = {
+            responsive: true
+        };
+        Plotly.newPlot('myGraph', data, layout, config);
+        connect = function() {
+            if (ws != undefined) {
+                ws.close(1000);
+            }
+            ws = new WebSocket("ws://{{my_ip}}:8080/ws/imu");
+            ws.onmessage = function(event) {
+                let message = JSON.parse(event.data);
+                var update = {
+                    x: [
+                        [message.raw_magnetometer[0], ]
+                    ],
+                    y: [
+                        [message.raw_magnetometer[1], ]
+                    ],
+                    z: [
+                        [message.raw_magnetometer[2], ]
+                    ]
+                }
+                Plotly.extendTraces('myGraph', update, [0], 7500);
+                Plotly.restyle('myGraph', update, [1]);
+            }
+        }
+        getMagData = function() {
+            let graphData = myGraph.data[0];
+            let magData = [];
+            graphData.x.forEach((value, index) => {
+                magData.push([graphData.x[index], graphData.y[index], graphData.z[index]]);
+            });
+            return magData;
+        }
+        clearTraces = function() {
+            Plotly.extendTraces('myGraph', {
+                x: [
+                    []
+                ],
+                y: [
+                    []
+                ],
+                z: [
+                    []
+                ]
+            }, [0], 0);
+        }
+        connect();
+    </script>
+</body>
+
+</html>

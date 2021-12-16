@@ -1,17 +1,35 @@
-from fastapi import FastAPI, HTTPException, Query, WebSocket, status
-from starlette.staticfiles import StaticFiles
-from starlette.responses import FileResponse
+from fastapi import FastAPI, HTTPException, Query, WebSocket, status, Request
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse, HTMLResponse
+from fastapi.templating import Jinja2Templates
 from geojson import FeatureCollection, Feature, LineString
 import aioredis
 import websockets
 import json
 import asyncio
 import logging
+import socket
 
 redis_connection = aioredis.Redis(decode_responses=True)
 app = FastAPI()
 
 app.mount("/static", StaticFiles(directory="../static"), name="static")
+
+
+templates = Jinja2Templates(directory="templates")
+
+
+def _get_my_ip():
+    my_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    try:
+        my_socket.connect(("10.255.255.255", 1))
+        my_ip_address = my_socket.getsockname()[0]
+    except Exception:
+        my_ip_address = "127.0.0.1"
+    finally:
+        my_socket.close()
+    return my_ip_address
+
 
 # calculate barometric altitude based on the following formula:
 # https://www.weather.gov/media/epz/wxcalc/pressureAltitude.pdf
@@ -36,6 +54,13 @@ async def _get_channel_data(channels):
 @app.get("/", include_in_schema=False)
 async def root():
     return FileResponse("../index.html")
+
+
+@app.get("/magnetometer", response_class=HTMLResponse)
+async def magnetometer(request: Request):
+    return templates.TemplateResponse(
+        "magnetometer.html", {"request": request, "my_ip": _get_my_ip()}
+    )
 
 
 @app.get("/api/current_pressure")
