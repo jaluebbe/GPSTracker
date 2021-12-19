@@ -27,8 +27,15 @@ OUT_Y_L_A = 0x2A
 OUT_Y_H_A = 0x2B
 OUT_Z_L_A = 0x2C
 OUT_Z_H_A = 0x2D
+OUT_X_L_M = 0x08
+OUT_X_H_M = 0x09
+OUT_Y_L_M = 0x0A
+OUT_Y_H_M = 0x0B
+OUT_Z_L_M = 0x0C
+OUT_Z_H_M = 0x0D
 
 ACCEL_SCALE = 2  # +/- 2g
+MAG_SCALE = 0.2  # +/- mT
 
 
 class DeviceNotFound(IOError):
@@ -60,7 +67,7 @@ class Lsm303d:
             self.bus.write_byte_data(self.i2c_address, CTRL_REG2, 0xC0)
             self.bus.write_byte_data(self.i2c_address, CTRL_REG3, 0x00)
             self.bus.write_byte_data(self.i2c_address, CTRL_REG4, 0x00)
-            self.bus.write_byte_data(self.i2c_address, CTRL_REG5, 0x18)
+            self.bus.write_byte_data(self.i2c_address, CTRL_REG5, 0x10)
             self.bus.write_byte_data(self.i2c_address, CTRL_REG6, 0x00)
             self.bus.write_byte_data(self.i2c_address, CTRL_REG7, 0x00)
         else:
@@ -72,6 +79,12 @@ class Lsm303d:
         # asserted so we |0x80 to enable register auto-increment
         raw = self.bus.read_i2c_block_data(
             self.i2c_address, OUT_X_L_A | 0x80, 6
+        )
+        return list(struct.unpack("<hhh", bytearray(raw)))
+
+    def get_raw_magnetometer(self):
+        raw = self.bus.read_i2c_block_data(
+            self.i2c_address, OUT_X_L_M | 0x80, 6
         )
         return list(struct.unpack("<hhh", bytearray(raw)))
 
@@ -88,16 +101,25 @@ class Lsm303d:
         ]
         return np.array([corrected]) * scaling
 
+    def get_magnetometer(self):
+        """ returns magnetic flux density as [[x, y, z]] in units of mT.
+        """
+        data = self.get_raw_magnetometer()
+        scaling = MAG_SCALE * 2 ** -15
+        return np.array([data]) * scaling
+
     def get_sensor_data(self):
         timestamp = time.time()
         roll, pitch, yaw = Tilt(
             self.get_acceleration() * [1, -1, 1], as_angles=True
         ).Q[0]
+        raw_magnetometer = self.get_raw_magnetometer()
         sensor_data = {
             "hostname": self.hostname,
             "i_utc": round(timestamp, 3),
             "roll": round(roll, 1),
             "pitch": round(pitch, 1),
+            "raw_magnetometer": raw_magnetometer,
         }
         return sensor_data
 
