@@ -3,23 +3,53 @@
 
 <head>
     <meta charset="utf-8" />
-    <title>magnetometer raw data</title>
+    <title>Magnetometer raw data</title>
     <style>
-        html,
-        body {
-            height: 100%;
+        * {
+            box-sizing: border-box;
+            padding: 0;
             margin: 0;
+        }
+
+        button {
+            padding: 5px;
+            font-size: 30px;
+        }
+
+        #grid-container {
+            display: grid;
+            grid-template-areas:
+                'myGraph'
+                'graphButtons';
+            grid-template-rows: 1fr auto;
+            grid-gap: 5px;
+            padding: 5px;
+            height: 100vh;
+        }
+
+        #grid-container>div {
+            text-align: center;
         }
 
         #myGraph {
             min-height: 400px;
-            height: 100%;
+            grid-area: myGraph;
+        }
+
+        #graphButtons {
+            grid-area: graphButtons
         }
     </style>
 </head>
-
 <body>
-    <div id="myGraph"></div>
+    <div id="grid-container">
+        <div id="myGraph"></div>
+        <div id="graphButtons">
+            <button onclick="clearTraces()">Clear data</button>
+            <button onclick="connect()">Connect</button>
+            <button onclick="stopAcquisition()">Stop acquisition</button>
+        </div>
+    </div>
     <script src="https://cdn.plot.ly/plotly-2.7.0.min.js" integrity="sha384-ylbm/cboOM330KlAJxfWacxZ1uL4kXrhRneA2p3i2tXdGXh4ZTJAN748MzFfppie" crossorigin="anonymous"></script>
     <script>
         var ws = undefined;
@@ -30,7 +60,7 @@
             z: [],
             mode: 'markers',
             marker: {
-                size: 5,
+                size: 7,
                 opacity: 0.5
             },
             type: 'scatter3d'
@@ -51,7 +81,7 @@
             showlegend: false,
             title: 'Magnetometer raw data',
             font: {
-                size: 14,
+                size: 15,
             },
         };
         var config = {
@@ -87,6 +117,11 @@
                 magData.push([graphData.x[index], graphData.y[index], graphData.z[index]]);
             });
             return magData;
+        }
+        stopAcquisition = function() {
+            if (ws != undefined) {
+                ws.close(1000);
+            }
         }
         clearTraces = function() {
             Plotly.extendTraces('myGraph', {
