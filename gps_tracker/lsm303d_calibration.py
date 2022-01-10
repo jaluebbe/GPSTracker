@@ -3,7 +3,7 @@
 import time
 import json
 import numpy as np
-from lsm303d_poller import Lsm303d
+from lsm303d import Lsm303d
 
 
 def _process_and_save(a_min, a_max, g):

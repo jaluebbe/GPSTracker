@@ -1,12 +1,12 @@
 [Unit]
-Description=IMU poller for LSM303D
+Description=IMU poller for LSM sensors
 After=redis-server.service
 
 [Service]
 Type=simple
 User=pi
 Restart=on-failure
-ExecStart=/home/pi/GPSTracker/gps_tracker/lsm303d_poller.py
+ExecStart=/home/pi/GPSTracker/gps_tracker/lsm_poller.py
 
 [Install]
 WantedBy=multi-user.target
