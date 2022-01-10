@@ -92,7 +92,7 @@
             if (ws != undefined) {
                 ws.close(1000);
             }
-            ws = new WebSocket("ws://{{my_ip}}:8080/ws/imu");
+            ws = new WebSocket("ws://" + window.location.host + "/ws/imu");
             ws.onmessage = function(event) {
                 let message = JSON.parse(event.data);
                 var update = {
