@@ -112,7 +112,7 @@ class Bmp280:
         return {
             "temperature": round(c_temp, 3),
             "pressure": round(pressure, 2),
-            "p_utc": round(timestamp, 2),
+            "p_utc": round(timestamp, 3),
             "hostname": self.hostname,
         }
 

@@ -68,7 +68,7 @@ def poll_gpsd():
                     {
                         "alt": my_gps.altitude,
                         "geo_sep": my_gps.geoid_height,
-                        "utc": round(my_gps.fix_time, 2),
+                        "utc": round(my_gps.fix_time, 3),
                         "hdop": my_gps.hdop,
                         "num_sats": my_gps.satellites_in_use,
                         "gps_status": my_gps.fix_stat,
