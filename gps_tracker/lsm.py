@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 # code is partly based on https://github.com/pimoroni/enviro-phat/blob/master/library/envirophat/lsm303d.py
-import smbus
 import time
 import json
 import os
@@ -14,6 +13,9 @@ class Lsm:
     def __init__(self, config_path=None):
         self.hostname = socket.gethostname()
         self.GYR_ADDRESS = None
+        self.MAG_ADDRESS = None
+        self.ACC_ADDRESS = None
+        pwd = os.path.dirname(os.path.abspath(__file__))
         if config_path is None:
             config_path = os.path.join(pwd, "lsm_calibration.json")
         if not os.path.isfile(config_path):
@@ -59,8 +61,14 @@ class Lsm:
         """ returns magnetic flux density as [[x, y, z]] in units of mT.
         """
         data = self.get_raw_magnetometer()
+        calibration = self.calibration
         scaling = self.MAG_SCALE
-        return np.array([data]) * scaling
+        corrected = [
+            data[0] - calibration["m_offset_x"],
+            data[1] - calibration["m_offset_y"],
+            data[2] - calibration["m_offset_z"],
+        ]
+        return np.array([corrected]) * scaling
 
     def get_gyro(self):
         """ returns angular velocity as [[x, y, z]] in units of dps.
@@ -71,22 +79,30 @@ class Lsm:
         corrected = [
             data[0] - calibration["g_offset_x"],
             data[1] - calibration["g_offset_y"],
-            data[2] - calibration["g_offset_z"]
+            data[2] - calibration["g_offset_z"],
         ]
         return np.array([corrected]) * scaling
 
     def get_sensor_data(self):
         timestamp = time.time()
+        if self.MAG_ADDRESS is not None:
+            magnetometer = self.get_magnetometer() * [1, -1, 1]
+        else:
+            magnetometer = None
         roll, pitch, yaw = Tilt(
-            self.get_acceleration() * [1, -1, 1], as_angles=True
+            self.get_acceleration() * [1, -1, 1],
+            magnetometer,
+            as_angles=True
         ).Q[0]
-        raw_magnetometer = self.get_raw_magnetometer()
         sensor_data = {
             "sensor": self.sensor,
             "hostname": self.hostname,
             "i_utc": round(timestamp, 3),
             "roll": round(roll, 1),
             "pitch": round(pitch, 1),
-            "raw_magnetometer": raw_magnetometer,
         }
+        if self.MAG_ADDRESS is not None:
+            raw_magnetometer = self.get_raw_magnetometer()
+            sensor_data["raw_magnetometer"] = raw_magnetometer
+            sensor_data["yaw"] = round(yaw, 1)
         return sensor_data
