@@ -11,9 +11,16 @@ from ahrs.filters import Tilt
 
 
 class Lsm:
-    def __init__(self):
+    def __init__(self, config_path=None):
         self.hostname = socket.gethostname()
         self.GYR_ADDRESS = None
+        if config_path is None:
+            config_path = os.path.join(pwd, "lsm_calibration.json")
+        if not os.path.isfile(config_path):
+            # no calibration data present, using default calibration
+            config_path = os.path.join(pwd, "lsm_calibration_example.json")
+        with open(config_path) as json_file:
+            self.calibration = json.load(json_file)
 
     def get_raw_acceleration(self):
         # in order to read multiple bytes the high bit of the sub address must be
@@ -62,9 +69,9 @@ class Lsm:
         calibration = self.calibration
         scaling = self.GYR_SCALE
         corrected = [
-            data[0] - calibration["a_offset_x"],
-            data[1] - calibration["a_offset_y"],
-            data[2] - calibration["a_offset_z"]
+            data[0] - calibration["g_offset_x"],
+            data[1] - calibration["g_offset_y"],
+            data[2] - calibration["g_offset_z"]
         ]
         return np.array([corrected]) * scaling
 
@@ -75,6 +82,7 @@ class Lsm:
         ).Q[0]
         raw_magnetometer = self.get_raw_magnetometer()
         sensor_data = {
+            "sensor": self.sensor,
             "hostname": self.hostname,
             "i_utc": round(timestamp, 3),
             "roll": round(roll, 1),

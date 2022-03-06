@@ -29,7 +29,8 @@ class DeviceNotFound(IOError):
 
 class Lsm303d(Lsm):
     def __init__(self, config_path=None):
-        super().__init__()
+        super().__init__(config_path)
+        self.sensor = "LSM303D"
         self.ACCEL_SCALE = ACCEL_SCALE
         self.MAG_SCALE = MAG_SCALE
         self.OUT_X_L_A = OUT_X_L_A
@@ -39,14 +40,6 @@ class Lsm303d(Lsm):
         self.initialize_sensor()
         # ensure that the sensor is really initialized to avoid false data
         self.initialize_sensor()
-        pwd = os.path.dirname(os.path.abspath(__file__))
-        if config_path is None:
-            config_path = os.path.join(pwd, "lsm303d_calibration.json")
-        if not os.path.isfile(config_path):
-            # no calibration data present, using default calibration
-            config_path = os.path.join(pwd, "lsm303d_calibration_example.json")
-        with open(config_path) as json_file:
-            self.calibration = json.load(json_file)
 
     def initialize_sensor(self):
         # Get I2C bus
