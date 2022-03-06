@@ -13,7 +13,7 @@ sudo apt-get install python3-rpi.gpio python3-redis redis-server gpsd
 python3-pip git python3-numpy python3-smbus  # optional: chrony gpsd-clients
 sudo pip3 install git+https://github.com/inmcm/micropyGPS.git
 sudo pip3 install PyGeodesy fastapi uvicorn aiofiles geojson ahrs \
-aioredis==2.0.0 jinja2
+aioredis==2.0.0
 ```
 
 ```
