@@ -145,7 +145,7 @@ async def websocket_endpoint(websocket: WebSocket, channel: str):
         await websocket.close(code=status.WS_1003_UNSUPPORTED_DATA)
         return
     pubsub = redis_connection.pubsub(ignore_subscribe_messages=True)
-    await pubsub.subscribe([channel])
+    await pubsub.subscribe(channel)
     while True:
         try:
             message = await pubsub.get_message()
