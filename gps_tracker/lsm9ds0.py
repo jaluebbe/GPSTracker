@@ -2,8 +2,6 @@
 # code is partly based on https://github.com/ozzmaker/BerryIMU
 import smbus
 import time
-import json
-import os
 from lsm import Lsm
 
 MAG_ADDRESS = 0x1E

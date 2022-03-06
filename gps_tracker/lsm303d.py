@@ -2,8 +2,6 @@
 # code is partly based on https://github.com/pimoroni/enviro-phat/blob/master/library/envirophat/lsm303d.py
 import smbus
 import time
-import json
-import os
 from lsm import Lsm
 
 ACC_ADDRESS = 0x1D
@@ -22,6 +20,7 @@ OUT_X_L_M = 0x08
 
 ACCEL_SCALE = 6.1e-5  # +/- 2g full scale
 MAG_SCALE = 8.0e-6  # +/- 0.2 mT full scale
+
 
 class DeviceNotFound(IOError):
     pass
