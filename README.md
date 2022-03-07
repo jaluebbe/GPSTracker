@@ -57,21 +57,11 @@ chmod +x /home/pi/GPSTracker/gps_tracker/bmp388_poller.py
 sudo systemctl enable bmp388poller.service
 ```
 
-Optional, if using an LSM303D sensor:
+Optional, if using a LSM sensors:
 ```
-sudo cp etc/systemd/system/lsm303d_poller.service /etc/systemd/system/
-chmod +x /home/pi/GPSTracker/gps_tracker/lsm303d_poller.py
-sudo systemctl enable lsm303d_poller.service
-```
-Otherwise, if using any IMU which is supported by RTIMULib2:
-```
-git clone https://github.com/seandepagnier/RTIMULib2.git
-cd RTIMULib2/Linux/python
-python3 setup.py build
-sudo python3 setup.py install
-sudo cp etc/systemd/system/imupoller.service /etc/systemd/system/
-chmod +x /home/pi/GPSTracker/gps_tracker/imu_poller.py
-sudo systemctl enable imupoller.service
+sudo cp etc/systemd/system/lsm_poller.service /etc/systemd/system/
+chmod +x /home/pi/GPSTracker/gps_tracker/lsm_poller.py
+sudo systemctl enable lsm_poller.service
 ```
 
 #### Data transfer to web page (optional)
