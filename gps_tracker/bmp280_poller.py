@@ -114,6 +114,7 @@ class Bmp280:
             "pressure": round(pressure, 2),
             "p_utc": round(timestamp, 3),
             "hostname": self.hostname,
+            "sensor": "BMP280",
         }
 
 
@@ -122,5 +123,5 @@ if __name__ == "__main__":
     sensor = Bmp280()
     while True:
         sensor_data = sensor.get_sensor_data()
-        redis_connection.publish("bmp280", json.dumps(sensor_data))
+        redis_connection.publish("barometer", json.dumps(sensor_data))
         time.sleep(0.08)
