@@ -17,7 +17,7 @@ gh = geoid.GeoidHeight(egm2008_path)
 pressure_history = deque(maxlen=50)
 imu_history = deque(maxlen=50)
 _pubsub = redis_connection.pubsub()
-_pubsub.subscribe(["gps", "bmp280", "bme280", "bmp388", "imu"])
+_pubsub.subscribe(["gps", "barometer", "imu"])
 old_location = None
 old_utc = None
 old_pressure = None
@@ -73,7 +73,7 @@ def get_distance(location1, location2):
 for item in _pubsub.listen():
     if not item[u"type"] == "message":
         continue
-    if item["channel"] in ["bmp280", "bme280", "bmp388"]:
+    if item["channel"] == "barometer":
         pressure_history.append(json.loads(item["data"]))
     elif item["channel"] == "imu":
         imu_history.append(json.loads(item["data"]))

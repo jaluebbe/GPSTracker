@@ -5,11 +5,11 @@ import time
 import json
 import socket
 import redis
+
 redis_connection = redis.Redis()
 
 
 class Bme280:
-
     def __init__(self, i2c_address=0x76):
         self.i2c_address = i2c_address
         self.initialize_sensor()
@@ -73,17 +73,17 @@ class Bme280:
         # Convert the data
         # Humidity coefficients
         self.dig_H2 = b1[1] * 256 + b1[0]
-        if self.dig_H2 > 32767 :
+        if self.dig_H2 > 32767:
             self.dig_H2 -= 65536
-        self.dig_H3 = (b1[2] &  0xFF)
+        self.dig_H3 = b1[2] & 0xFF
         self.dig_H4 = (b1[3] * 16) + (b1[4] & 0xF)
-        if self.dig_H4 > 32767 :
+        if self.dig_H4 > 32767:
             self.dig_H4 -= 65536
         self.dig_H5 = (b1[4] / 16) + (b1[5] * 16)
-        if self.dig_H5 > 32767 :
+        if self.dig_H5 > 32767:
             self.dig_H5 -= 65536
         self.dig_H6 = b1[6]
-        if self.dig_H6 > 127 :
+        if self.dig_H6 > 127:
             self.dig_H6 -= 256
 
         # BME280 address, 0x76(118)
@@ -121,8 +121,10 @@ class Bme280:
 
         # Temperature offset calculations
         var1 = (adc_t / 16384.0 - self.dig_T1 / 1024.0) * self.dig_T2
-        var2 = ((adc_t / 131072.0 - self.dig_T1 / 8192.0) *
-            (adc_t/131072.0 - self.dig_T1/8192.0)) * self.dig_T3
+        var2 = (
+            (adc_t / 131072.0 - self.dig_T1 / 8192.0)
+            * (adc_t / 131072.0 - self.dig_T1 / 8192.0)
+        ) * self.dig_T3
         t_fine = var1 + var2
         c_temp = (var1 + var2) / 5120.0
 
@@ -130,39 +132,52 @@ class Bme280:
         var1 = t_fine / 2.0 - 64000.0
         var2 = var1 * var1 * self.dig_P6 / 32768.0
         var2 = var2 + var1 * self.dig_P5 * 2.0
-        var2 = var2/4.0 + self.dig_P4*65536.0
-        var1 = (self.dig_P3 * var1 * var1 / 524288.0 + self.dig_P2 * var1) / \
-            524288.0
+        var2 = var2 / 4.0 + self.dig_P4 * 65536.0
+        var1 = (
+            self.dig_P3 * var1 * var1 / 524288.0 + self.dig_P2 * var1
+        ) / 524288.0
         var1 = (1.0 + var1 / 32768.0) * self.dig_P1
         p = 1048576.0 - adc_p
-        p = (p - var2/4096.0) * 6250.0 / var1
+        p = (p - var2 / 4096.0) * 6250.0 / var1
         var1 = self.dig_P9 * p * p / 2147483648.0
         var2 = p * self.dig_P8 / 32768.0
-        pressure = (p + (var1 + var2 + self.dig_P7) / 16.0)
+        pressure = p + (var1 + var2 + self.dig_P7) / 16.0
 
         # Humidity offset calculations
-        var_H = ((t_fine) - 76800.0)
+        var_H = (t_fine) - 76800.0
         var_H = (
-            adc_h - (self.dig_H4*64.0 + self.dig_H5/16384.0*var_H)) * (
-            self.dig_H2 / 65536.0 * (1.0 + self.dig_H6/67108864.0*var_H*(
-            1.0 + self.dig_H3/67108864.0*var_H)))
-        humidity = var_H * (1.0 - self.dig_H1*var_H/524288.0)
-        if humidity > 100.0 :
+            adc_h - (self.dig_H4 * 64.0 + self.dig_H5 / 16384.0 * var_H)
+        ) * (
+            self.dig_H2
+            / 65536.0
+            * (
+                1.0
+                + self.dig_H6
+                / 67108864.0
+                * var_H
+                * (1.0 + self.dig_H3 / 67108864.0 * var_H)
+            )
+        )
+        humidity = var_H * (1.0 - self.dig_H1 * var_H / 524288.0)
+        if humidity > 100.0:
             humidity = 100.0
-        elif humidity < 0.0 :
+        elif humidity < 0.0:
             humidity = 0.0
 
         return {
-            'temperature': round(c_temp, 3), 'pressure': round(pressure, 2),
-            'p_utc': round(timestamp, 3), 'hostname': self.hostname,
-            'humidity': round(humidity, 1)
+            "temperature": round(c_temp, 3),
+            "pressure": round(pressure, 2),
+            "p_utc": round(timestamp, 3),
+            "hostname": self.hostname,
+            "humidity": round(humidity, 1),
+            "sensor": "BME280",
         }
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
 
     sensor = Bme280()
     while True:
         sensor_data = sensor.get_sensor_data()
-        redis_connection.publish('bme280', json.dumps(sensor_data))
+        redis_connection.publish("barometer", json.dumps(sensor_data))
         time.sleep(0.08)

@@ -11,12 +11,12 @@ def measure_pressure_noise(duration=60):
     pressure_history = deque()
     temperature_history = deque()
     _pubsub = redis_connection.pubsub()
-    _pubsub.subscribe(["bmp280", "bmp388"])
+    _pubsub.subscribe("barometer")
     t_start = None
     for item in _pubsub.listen():
         if not item[u"type"] == "message":
             continue
-        if item["channel"] in ["bmp280", "bmp388"]:
+        if item["channel"] == "barometer":
             _data = json.loads(item["data"])
             pressure_history.append(_data["pressure"])
             temperature_history.append(_data["temperature"])

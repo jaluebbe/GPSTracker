@@ -10,7 +10,7 @@ pressure_buffer = deque(maxlen=700)
 buffer_time = None
 pressure_data = None
 _pubsub = redis_connection.pubsub()
-_pubsub.subscribe(["bmp280", "bme280", "bmp388", "transfer_data"])
+_pubsub.subscribe(["barometer", "transfer_data"])
 old_pressure = 0
 old_pressure_utc = 0
 log_altitude = True
@@ -40,7 +40,7 @@ for item in _pubsub.listen():
             "utc": int(buffer_time),
             "hostname": data["hostname"],
         }
-        if item["channel"] == "bme280":
+        if data.get("humidity") is not None:
             pressure_data["humidity"] = int(round(data["humidity"]))
         if (
             log_pressure
