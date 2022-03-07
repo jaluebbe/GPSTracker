@@ -5,13 +5,17 @@ from geojson import FeatureCollection, Feature, LineString
 import aioredis
 import websockets
 import json
+import os
 import asyncio
 import logging
-import socket
 
-redis_connection = aioredis.Redis(decode_responses=True)
+if "REDIS_HOST" in os.environ:
+    redis_host = os.environ["REDIS_HOST"]
+else:
+    redis_host = "127.0.0.1"
+redis_connection = aioredis.Redis(host=redis_host, decode_responses=True)
+
 app = FastAPI()
-
 app.mount("/static", StaticFiles(directory="../static"), name="static")
 
 
@@ -22,9 +26,9 @@ def _calculate_pressure_altitude(pressure, p0=101_325):
     return altitude
 
 
-async def _get_channel_data(channels):
+async def _get_channel_data(channel):
     pubsub = redis_connection.pubsub(ignore_subscribe_messages=True)
-    await pubsub.subscribe(channels)
+    await pubsub.subscribe(channel)
     while True:
         message = await pubsub.get_message()
         if message is not None:
@@ -42,7 +46,7 @@ async def root():
 
 @app.get("/api/current_pressure")
 async def get_current_pressure():
-    channels = ["bme280", "bmp280", "bmp388"]
+    channel = "barometer"
     try:
         pressure_data = await asyncio.wait_for(_get_channel_data(channels), 0.2)
     except asyncio.TimeoutError:
@@ -53,9 +57,9 @@ async def get_current_pressure():
 
 @app.get("/api/current_orientation")
 async def get_current_orientation():
-    channels = ["imu"]
+    channel = "imu"
     try:
-        imu_data = await asyncio.wait_for(_get_channel_data(channels), 0.2)
+        imu_data = await asyncio.wait_for(_get_channel_data(channel), 0.2)
     except asyncio.TimeoutError:
         logging.exception("/api/current_orientation")
         raise HTTPException(status_code=404, detail="no data available")
@@ -135,9 +139,7 @@ async def websocket_endpoint(websocket: WebSocket, channel: str):
     supported_channels = [
         "imu",
         "gps",
-        "bme280",
-        "bmp280",
-        "bmp388",
+        "barometer",
         "transfer_data",
     ]
     await websocket.accept()
