@@ -122,6 +122,7 @@
             if (ws != undefined) {
                 ws.close(1000);
             }
+            console.log(JSON.stringify(getMagData()));
         }
         clearTraces = function() {
             Plotly.extendTraces('myGraph', {
