@@ -2,6 +2,7 @@
 # code is partly based on https://github.com/pimoroni/enviro-phat/blob/master/library/envirophat/lsm303d.py
 import smbus
 import time
+import struct
 from lsm import Lsm
 
 ACC_ADDRESS = 0x1D
@@ -55,3 +56,26 @@ class Lsm303d(Lsm):
         else:
             raise DeviceNotFound(f"LSM303D not found on {self.i2c_address}")
         time.sleep(0.5)
+
+    def update_raw_acceleration(self):
+        # in order to read multiple bytes the high bit of the sub address must be
+        # asserted so we |0x80 to enable register auto-increment
+        raw = self.bus.read_i2c_block_data(
+            self.ACC_ADDRESS, self.OUT_X_L_A | 0x80, 6
+        )
+        self.raw_acceleration = list(struct.unpack("<hhh", bytearray(raw)))
+        return self.raw_acceleration
+
+    def update_raw_magnetometer(self):
+        raw = self.bus.read_i2c_block_data(
+            self.MAG_ADDRESS, self.OUT_X_L_M | 0x80, 6
+        )
+        self.raw_magnetometer = list(struct.unpack("<hhh", bytearray(raw)))
+        return self.raw_magnetometer
+
+    def update_raw_gyro(self):
+        raw = self.bus.read_i2c_block_data(
+            self.GYR_ADDRESS, self.OUT_X_L_G | 0x80, 6
+        )
+        self.raw_gyro = list(struct.unpack("<hhh", bytearray(raw)))
+        return self.raw_gyro
