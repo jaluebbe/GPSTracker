@@ -21,7 +21,7 @@ else:
 pressure_history = deque(maxlen=50)
 imu_history = deque(maxlen=50)
 _pubsub = redis_connection.pubsub()
-_pubsub.subscribe(["gps", "barometer", "imu"])
+_pubsub.subscribe("gps", "barometer", "imu")
 old_location = None
 old_utc = None
 old_pressure = None
