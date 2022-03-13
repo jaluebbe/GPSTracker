@@ -37,7 +37,6 @@ class Lsm:
         data = np.array(self.raw_acceleration)
         calibration = self.calibration
         scaling = self.ACCEL_SCALE * calibration["g"]
-        print(data)
         centered = data - calibration["a_offset"]
         corrected = np.array(self.calibration["a_matrix"]).dot(centered)
         return corrected * scaling * calibration["a_scale"]
