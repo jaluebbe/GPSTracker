@@ -60,7 +60,7 @@ chmod +x /home/pi/GPSTracker/gps_tracker/bmp388_poller.py
 sudo systemctl enable bmp388poller.service
 ```
 
-Optional, if using a LSM sensors:
+Optional, if using an LSM sensor:
 ```
 sudo cp etc/systemd/system/lsm_poller.service /etc/systemd/system/
 chmod +x /home/pi/GPSTracker/gps_tracker/lsm_poller.py
