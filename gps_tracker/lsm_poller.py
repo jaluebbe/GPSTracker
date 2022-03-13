@@ -6,23 +6,28 @@ from lsm303d import Lsm303d
 from lsm9ds0 import Lsm9ds0
 from lsm6dsl_lis3mdl import Lsm6dsl_Lis3mdl
 
-redis_connection = redis.Redis()
+
+def get_lsm_sensor():
+    try:
+        return Lsm303d()
+    except:
+        print("no LSM303d found")
+    try:
+        return Lsm9ds0()
+    except:
+        print("no LSM9DS0 found")
+    try:
+        return Lsm6dsl_Lis3mdl()
+    except:
+        print("no LSM6DSL+LIS3MDL found")
 
 
 if __name__ == "__main__":
 
-    try:
-        sensor = Lsm303d()
-    except:
-        print("no LSM303d found")
-    try:
-        sensor = Lsm9ds0()
-    except:
-        print("no LSM9DS0 found")
-    try:
-        sensor = Lsm6dsl_Lis3mdl()
-    except:
-        print("no LSM6DSL+LIS3MDL found")
+    redis_connection = redis.Redis()
+    sensor = get_lsm_sensor()
+    if sensor is None:
+        exit()
     while True:
         sensor_data = sensor.get_sensor_data()
         redis_connection.publish("imu", json.dumps(sensor_data))
