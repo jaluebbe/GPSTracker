@@ -3,7 +3,7 @@
 import time
 import json
 import numpy as np
-from lsm303d import Lsm303d
+import lsm_poller
 
 
 def _process_and_save(a_min, a_max, g):
@@ -16,21 +16,17 @@ def _process_and_save(a_min, a_max, g):
     scale_a_y = combined_avg_a_delta / avg_a_delta[1]
     scale_a_z = combined_avg_a_delta / avg_a_delta[2]
     calibration = {
-        "a_offset_x": a_offset[0],
-        "a_offset_y": a_offset[1],
-        "a_offset_z": a_offset[2],
-        "scale_a_x": scale_a_x,
-        "scale_a_y": scale_a_y,
-        "scale_a_z": scale_a_z,
+        "a_offset": a_offset,
+        "a_matrix": np.diag([scale_a_x, scale_a_y, scale_a_z]).tolist(),
         "g": g,
     }
     print(json.dumps(calibration, indent=4))
-    with open("lsm303d_calibration.json", "w") as json_file:
+    with open("new_calibration.json", "w") as json_file:
         json.dump(calibration, json_file)
 
 
 def perform_calibration():
-    sensor = Lsm303d()
+    sensor = lsm_poller.get_lsm_sensor()
     measuring_duration = 5
     g = 9.80665  # could be changed to local conditions during calibration.
     running_a_min = (32767, 32767, 32767)
@@ -52,7 +48,7 @@ def perform_calibration():
                 break
             else:
                 t_start = time.time()
-        data = sensor.get_raw_acceleration()
+        data = sensor.update_raw_acceleration()
         running_a_min = tuple(map(lambda x, y: min(x, y), running_a_min, data))
         running_a_max = tuple(map(lambda x, y: max(x, y), running_a_max, data))
         time.sleep(0.02)
