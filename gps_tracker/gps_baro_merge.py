@@ -13,7 +13,11 @@ import geoid
 
 redis_connection = redis.Redis(decode_responses=True)
 egm2008_path = "/home/pi/egm2008/egm2008-1.pgm"
-gh = geoid.GeoidHeight(egm2008_path)
+if os.path.isfile(egm2008_path):
+    gh = geoid.GeoidHeight(egm2008_path)
+    use_egm2008 = True
+else:
+    use_egm2008 = False
 pressure_history = deque(maxlen=50)
 imu_history = deque(maxlen=50)
 _pubsub = redis_connection.pubsub()
@@ -118,7 +122,11 @@ for item in _pubsub.listen():
             old_pressure = data.get("pressure")
             gps_altitude = data.get("alt")
             gps_geoid_separation = data.get("geo_sep")
-            if None not in [location, gps_altitude, gps_geoid_separation]:
+            if use_egm2008 and None not in [
+                location,
+                gps_altitude,
+                gps_geoid_separation,
+            ]:
                 egm2008_separation = gh.get(*location)
                 geoid_altitude = (
                     gps_altitude + gps_geoid_separation - egm2008_separation
