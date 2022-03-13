@@ -9,11 +9,11 @@ It is assumed that you are using Raspberry Pi OS (Lite version) on your
 Raspberry Pi.
 ### Setup and requirements
 ```
-sudo apt-get install python3-rpi.gpio python3-redis redis-server gpsd
-python3-pip git python3-numpy python3-smbus  # optional: chrony gpsd-clients
+sudo apt-get install redis-server gpsd
+python3-pip git python3-smbus  # optional: chrony gpsd-clients
 sudo pip3 install git+https://github.com/inmcm/micropyGPS.git
-sudo pip3 install PyGeodesy fastapi uvicorn aiofiles geojson ahrs \
-aioredis==2.0.0
+sudo pip3 install PyGeodesy fastapi uvicorn redis geojson ahrs \
+aioredis==2 numpy websockets
 ```
 
 ```
@@ -39,6 +39,9 @@ sudo cp etc/systemd/system/pressurelogger.service /etc/systemd/system/
 chmod +x /home/pi/GPSTracker/gps_tracker/pressure_logger.py
 sudo systemctl enable pressurelogger.service
 ```
+
+Optional to get more precise information on geoid corrections of GPS altitude:
+
 Download egm2008-1 as ZIP file from one of the locations listed at 
 https://geographiclib.sourceforge.io/1.18/geoid.html and put egm2008-1.pgm 
 in /home/pi/egm2008/ .
