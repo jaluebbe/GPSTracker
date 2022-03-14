@@ -6,7 +6,7 @@ import os
 import socket
 import numpy as np
 from ahrs.filters import Complementary
-from ahrs import Quaternion
+from ahrs import Quaternion, RAD2DEG, DEG2RAD
 
 
 class Lsm:
@@ -39,7 +39,7 @@ class Lsm:
         scaling = self.ACCEL_SCALE * calibration["g"]
         centered = data - calibration["a_offset"]
         corrected = np.array(self.calibration["a_matrix"]).dot(centered)
-        return corrected * scaling * calibration["a_scale"]
+        return corrected * scaling * calibration["a_sign"]
 
     def get_magnetometer(self):
         """ returns magnetic flux density as [x, y, z] in units of mT.
@@ -50,7 +50,7 @@ class Lsm:
         scaling = self.MAG_SCALE
         centered = data - calibration["m_offset"]
         corrected = np.array(self.calibration["m_matrix"]).dot(centered)
-        return corrected * scaling * calibration["m_scale"]
+        return corrected * scaling * calibration["m_sign"]
 
     def get_gyro(self):
         """ returns angular velocity as [x, y, z] in units of rad/s.
@@ -58,9 +58,9 @@ class Lsm:
         self.update_raw_gyro()
         data = np.array(self.raw_gyro)
         calibration = self.calibration
-        scaling = self.GYR_SCALE * np.pi / 180
+        scaling = self.GYR_SCALE * DEG2RAD
         corrected = data - calibration["g_offset"]
-        return corrected * scaling * calibration["g_scale"]
+        return corrected * scaling * calibration["g_sign"]
 
     def get_sensor_data(self):
         timestamp = time.time()
@@ -74,16 +74,21 @@ class Lsm:
             magnetometer
         )
         if self.old_timestamp is not None and self.GYR_ADDRESS is not None:
-            self.complementary.Dt = timestamp - self.old_timestamp
+            dt = timestamp - self.old_timestamp
+            self.complementary.Dt = dt
             gyr = np.array(self.get_gyro())
             q_omega = self.complementary.attitude_propagation(self.old_q, gyr)
+            
             # Complementary Estimation
-            gain = 0.1
-            q_est = (1.0 - gain)*q_omega + gain*q_am
-            q = q_est/np.linalg.norm(q_est)
+            gain = 0.02
+            if np.linalg.norm(q_omega + q_am) < np.sqrt(2):
+                q_est = (1.0 - gain)*q_omega - gain*q_am
+            else:
+                q_est = (1.0 - gain)*q_omega + gain*q_am
+            q = q_est / np.linalg.norm(q_est)
         else:
             q = q_am
-        roll, pitch, yaw = Quaternion(q).to_angles() * 180 / np.pi
+        roll, pitch, yaw = Quaternion(q).to_angles() * RAD2DEG
         sensor_data = {
             "sensor": self.sensor,
             "hostname": self.hostname,
