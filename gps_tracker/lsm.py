@@ -31,8 +31,7 @@ class Lsm:
             self.calibration = json.load(json_file)
 
     def get_acceleration(self):
-        """ returns acceleration as [x, y, z] in units of m/s^2.
-        """
+        """returns acceleration as [x, y, z] in units of m/s^2."""
         self.update_raw_acceleration()
         data = np.array(self.raw_acceleration)
         calibration = self.calibration
@@ -42,8 +41,7 @@ class Lsm:
         return corrected * scaling * calibration["a_sign"]
 
     def get_magnetometer(self):
-        """ returns magnetic flux density as [x, y, z] in units of mT.
-        """
+        """returns magnetic flux density as [x, y, z] in units of mT."""
         self.update_raw_magnetometer()
         data = np.array(self.raw_magnetometer)
         calibration = self.calibration
@@ -53,8 +51,7 @@ class Lsm:
         return corrected * scaling * calibration["m_sign"]
 
     def get_gyro(self):
-        """ returns angular velocity as [x, y, z] in units of rad/s.
-        """
+        """returns angular velocity as [x, y, z] in units of rad/s."""
         self.update_raw_gyro()
         data = np.array(self.raw_gyro)
         calibration = self.calibration
@@ -69,25 +66,27 @@ class Lsm:
             magnetometer = self.get_magnetometer()
         else:
             magnetometer = None
-        q_am = self.complementary.am_estimation(
-            acc,
-            magnetometer
-        )
+        q_am = self.complementary.am_estimation(acc, magnetometer)
         if self.old_timestamp is not None and self.GYR_ADDRESS is not None:
             dt = timestamp - self.old_timestamp
             self.complementary.Dt = dt
             gyr = np.array(self.get_gyro())
             q_omega = self.complementary.attitude_propagation(self.old_q, gyr)
-            
+            roll_gyr, pitch_gyr, yaw_gyr = (
+                Quaternion(q_omega).to_angles() * RAD2DEG
+            )
+
             # Complementary Estimation
             gain = 0.02
             if np.linalg.norm(q_omega + q_am) < np.sqrt(2):
-                q_est = (1.0 - gain)*q_omega - gain*q_am
+                q_est = (1.0 - gain) * q_omega - gain * q_am
             else:
-                q_est = (1.0 - gain)*q_omega + gain*q_am
+                q_est = (1.0 - gain) * q_omega + gain * q_am
             q = q_est / np.linalg.norm(q_est)
         else:
             q = q_am
+            yaw_gyr = 0
+        roll_acc, pitch_acc, yaw_acc = Quaternion(q_am).to_angles() * RAD2DEG
         roll, pitch, yaw = Quaternion(q).to_angles() * RAD2DEG
         sensor_data = {
             "sensor": self.sensor,
@@ -95,6 +94,8 @@ class Lsm:
             "i_utc": round(timestamp, 3),
             "roll": round(roll, 2),
             "pitch": round(pitch, 2),
+            "roll_acc": round(roll_acc, 2),
+            "yaw_gyr": round(yaw_gyr, 2),
         }
         if self.MAG_ADDRESS is not None:
             sensor_data["raw_magnetometer"] = self.raw_magnetometer
