@@ -40,12 +40,6 @@ chmod +x /home/pi/GPSTracker/gps_tracker/pressure_logger.py
 sudo systemctl enable pressurelogger.service
 ```
 
-Optional to get more precise information on geoid corrections of GPS altitude:
-
-Download egm2008-1 as ZIP file from one of the locations listed at 
-https://geographiclib.sourceforge.io/1.18/geoid.html and put egm2008-1.pgm 
-in /home/pi/egm2008/ .
-
 To use a BMP280 pressure sensor:
 ```
 sudo cp etc/systemd/system/bmp280poller.service /etc/systemd/system/
