@@ -1,9 +1,9 @@
-from fastapi import FastAPI, HTTPException, Query, WebSocket, status, Request
+from fastapi import FastAPI, HTTPException, Query, WebSocket, status
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from geojson import FeatureCollection, Feature, LineString
 import aioredis
-import websockets
+import websockets.exceptions
 import json
 import os
 import asyncio
@@ -42,6 +42,12 @@ async def _get_channel_data(channel):
 @app.get("/", include_in_schema=False)
 async def root():
     return FileResponse("../index.html")
+
+
+@app.get("/api/websocket_connections")
+async def get_websocket_connections():
+    websocket_connections = await redis_connection.get("ws_connections")
+    return websocket_connections
 
 
 @app.get("/api/current_pressure")
@@ -141,6 +147,7 @@ async def websocket_endpoint(websocket: WebSocket, channel: str):
         "gps",
         "barometer",
         "transfer_data",
+        "ws_connections",
     ]
     await websocket.accept()
     if channel not in supported_channels:
@@ -148,6 +155,8 @@ async def websocket_endpoint(websocket: WebSocket, channel: str):
         return
     pubsub = redis_connection.pubsub(ignore_subscribe_messages=True)
     await pubsub.subscribe(channel)
+    ws_connections = await redis_connection.incr("ws_connections")
+    await redis_connection.publish("ws_connections", ws_connections)
     while True:
         try:
             message = await pubsub.get_message()
@@ -157,8 +166,12 @@ async def websocket_endpoint(websocket: WebSocket, channel: str):
         except asyncio.TimeoutError:
             pass
         except websockets.exceptions.ConnectionClosedError:
+            ws_connections = await redis_connection.decr("ws_connections")
+            await redis_connection.publish("ws_connections", ws_connections)
             logging.exception("abnormal closure of websocket connection.")
             break
         except websockets.exceptions.ConnectionClosedOK:
+            ws_connections = await redis_connection.decr("ws_connections")
+            await redis_connection.publish("ws_connections", ws_connections)
             # normal closure with close code 1000
             break
