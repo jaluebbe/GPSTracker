@@ -6,8 +6,6 @@ import json
 import socket
 import redis
 
-redis_connection = redis.Redis()
-
 
 class Bmp280:
     def __init__(self, i2c_address=0x77):
@@ -120,8 +118,12 @@ class Bmp280:
 
 if __name__ == "__main__":
 
+    redis_connection = redis.Redis()
+    interval = 0.08
     sensor = Bmp280()
     while True:
+        t_start = time.time()
         sensor_data = sensor.get_sensor_data()
         redis_connection.publish("barometer", json.dumps(sensor_data))
-        time.sleep(0.08)
+        dt = time.time() - t_start
+        time.sleep(max(0, interval - dt))

@@ -25,10 +25,13 @@ def get_lsm_sensor():
 if __name__ == "__main__":
 
     redis_connection = redis.Redis()
+    interval = 0.08
     sensor = get_lsm_sensor()
     if sensor is None:
         exit()
     while True:
+        t_start = time.time()
         sensor_data = sensor.get_sensor_data()
         redis_connection.publish("imu", json.dumps(sensor_data))
-        time.sleep(0.08)
+        dt = time.time() - t_start
+        time.sleep(max(0, interval - dt))

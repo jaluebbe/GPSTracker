@@ -6,8 +6,6 @@ import json
 import socket
 import redis
 
-redis_connection = redis.Redis()
-
 I2C_ADD_BMP388_AD0_LOW = 0x76
 I2C_ADD_BMP388_AD0_HIGH = 0x77
 I2C_ADD_BMP388 = I2C_ADD_BMP388_AD0_HIGH
@@ -209,8 +207,12 @@ class Bmp388:
 
 if __name__ == "__main__":
 
+    redis_connection = redis.Redis()
+    interval = 0.08
     sensor = Bmp388()
     while True:
+        t_start = time.time()
         sensor_data = sensor.get_sensor_data()
         redis_connection.publish("barometer", json.dumps(sensor_data))
-        time.sleep(0.08)
+        dt = time.time() - t_start
+        time.sleep(max(0, interval - dt))
