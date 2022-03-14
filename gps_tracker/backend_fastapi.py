@@ -1,6 +1,6 @@
 from fastapi import FastAPI, HTTPException, Query, WebSocket, status
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
+from fastapi.responses import RedirectResponse
 from geojson import FeatureCollection, Feature, LineString
 import aioredis
 import websockets.exceptions
@@ -41,7 +41,7 @@ async def _get_channel_data(channel):
 
 @app.get("/", include_in_schema=False)
 async def root():
-    return FileResponse("../index.html")
+    return RedirectResponse("/static/index.html")
 
 
 @app.get("/api/websocket_connections")
