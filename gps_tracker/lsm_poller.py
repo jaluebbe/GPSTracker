@@ -25,7 +25,7 @@ def get_lsm_sensor():
 if __name__ == "__main__":
 
     redis_connection = redis.Redis()
-    interval = 0.08
+    interval = 0.04
     sensor = get_lsm_sensor()
     if sensor is None:
         exit()
