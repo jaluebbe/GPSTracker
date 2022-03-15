@@ -102,3 +102,10 @@ venv.bak/
 
 # mypy
 .mypy_cache/
+
+# directory for log files
+logs_json/
+
+# calibration files
+lsm_calibration.json
+new_calibration.json
