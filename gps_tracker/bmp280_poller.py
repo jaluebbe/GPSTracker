@@ -111,8 +111,8 @@ class Bmp280:
             "temperature": round(c_temp, 3),
             "pressure": round(pressure, 2),
             "p_utc": round(timestamp, 3),
-            "hostname": self.hostname,
-            "sensor": "BMP280",
+            "p_hostname": self.hostname,
+            "p_sensor": "BMP280",
         }
 
 

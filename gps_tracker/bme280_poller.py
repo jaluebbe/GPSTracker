@@ -166,9 +166,9 @@ class Bme280:
             "temperature": round(c_temp, 3),
             "pressure": round(pressure, 2),
             "p_utc": round(timestamp, 3),
-            "hostname": self.hostname,
+            "p_hostname": self.hostname,
             "humidity": round(humidity, 1),
-            "sensor": "BME280",
+            "p_sensor": "BME280",
         }
 
 

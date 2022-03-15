@@ -42,6 +42,14 @@ dump_ignore_keys = [
     "class",
     "mgrs",
     "p_utc",
+    "i_utc",
+    "raw_magnetometer",
+    "p_sensor",
+    "i_sensor",
+    "roll_acc",
+    "yaw_gyr",
+    "p_hostname",
+    "i_hostname",
 ]
 
 

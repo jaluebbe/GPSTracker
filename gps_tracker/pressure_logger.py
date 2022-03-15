@@ -38,7 +38,7 @@ for item in _pubsub.listen():
             "pressure": int(round(np.mean(pressure_buffer))),
             "temperature": round(data["temperature"], 1),
             "utc": int(buffer_time),
-            "hostname": data["hostname"],
+            "hostname": data["p_hostname"],
         }
         if data.get("humidity") is not None:
             pressure_data["humidity"] = int(round(data["humidity"]))
@@ -47,7 +47,7 @@ for item in _pubsub.listen():
             and time.gmtime(buffer_time).tm_min in log_pressure_minutes
         ):
             key = "pressure:{}:{}".format(
-                data["hostname"], time.strftime("%Y%m")
+                data["p_hostname"], time.strftime("%Y%m")
             )
             redis_connection.lpush(key, json.dumps(pressure_data))
         pressure_buffer.clear()
@@ -69,7 +69,7 @@ for item in _pubsub.listen():
     elif (
         log_altitude and np.abs(np.diff([data["pressure"], old_pressure])) > 10
     ):
-        key = "altitude:{}:{}".format(data["hostname"], time.strftime("%Y%m%d"))
+        key = "altitude:{}:{}".format(data["p_hostname"], time.strftime("%Y%m%d"))
         redis_connection.lpush(key, json.dumps(data))
         old_pressure = data["pressure"]
         old_pressure_utc = data["p_utc"]

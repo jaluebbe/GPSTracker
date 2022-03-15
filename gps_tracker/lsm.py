@@ -89,8 +89,8 @@ class Lsm:
         roll_acc, pitch_acc, yaw_acc = Quaternion(q_am).to_angles() * RAD2DEG
         roll, pitch, yaw = Quaternion(q).to_angles() * RAD2DEG
         sensor_data = {
-            "sensor": self.sensor,
-            "hostname": self.hostname,
+            "i_sensor": self.sensor,
+            "i_hostname": self.hostname,
             "i_utc": round(timestamp, 3),
             "roll": round(roll, 2),
             "pitch": round(pitch, 2),
