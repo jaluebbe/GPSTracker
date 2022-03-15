@@ -8,7 +8,7 @@ if not os.path.isdir("logs_json"):
     os.mkdir("logs_json")
 
 for key in redis_connection.scan_iter("*"):
-    if key in ["current_pressure"]:
+    if key in ["ws_connections"]:
         continue
     file_name = "logs_json/" + "_".join(key.split(":")) + ".json"
     print(key)
