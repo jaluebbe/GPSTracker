@@ -62,6 +62,7 @@ class Lsm:
     def get_sensor_data(self):
         timestamp = time.time()
         acc = self.get_acceleration()
+        heading_offset = self.calibration["heading_offset"]
         if self.MAG_ADDRESS is not None:
             magnetometer = self.get_magnetometer()
         else:
@@ -85,9 +86,10 @@ class Lsm:
             q = q_est / np.linalg.norm(q_est)
         else:
             q = q_am
-            yaw_gyr = 0
+            yaw_gyr = -heading_offset
         roll_acc, pitch_acc, yaw_acc = Quaternion(q_am).to_angles() * RAD2DEG
         roll, pitch, yaw = Quaternion(q).to_angles() * RAD2DEG
+        heading_offset = heading_offset
         sensor_data = {
             "i_sensor": self.sensor,
             "i_hostname": self.hostname,
@@ -95,11 +97,11 @@ class Lsm:
             "roll": round(roll, 2),
             "pitch": round(pitch, 2),
             "roll_acc": round(roll_acc, 2),
-            "yaw_gyr": round(yaw_gyr, 2),
+            "yaw_gyr": round(yaw_gyr + heading_offset, 2),
         }
         if self.MAG_ADDRESS is not None:
             sensor_data["raw_magnetometer"] = self.raw_magnetometer
-            sensor_data["yaw"] = round(yaw, 2)
+            sensor_data["yaw"] = round(yaw + heading_offset, 2)
         self.old_timestamp = timestamp
         self.old_q = q
         return sensor_data
