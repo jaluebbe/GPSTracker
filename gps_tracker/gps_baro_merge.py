@@ -50,10 +50,20 @@ dump_ignore_keys = [
     "yaw_gyr",
     "p_hostname",
     "i_hostname",
+    "leapseconds",
+    "ecefx",
+    "ecefy",
+    "ecefz",
+    "ecefvx",
+    "ecefvy",
+    "ecefvz",
+    "ecefpAcc",
+    "ecefvAcc",
+    "eph",
+    "sep",
 ]
 
 
-# Return CPU temperature as a character string
 def get_cpu_temperature():
     res = os.popen("vcgencmd measure_temp").readline()
     return float(res.replace("temp=", "").replace("'C\n", ""))
@@ -122,7 +132,6 @@ for item in _pubsub.listen():
             old_location = location
             old_pressure = data.get("pressure")
             gps_altitude = data.get("alt")
-            gps_geoid_separation = data.get("geo_sep")
             if location is not None:
                 utm = pygeodesy.toUtm(*location)
                 data["utm"] = utm.toStr()

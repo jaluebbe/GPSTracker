@@ -15,7 +15,7 @@ async def consume_gpsd():
         async for msg in gpsd:
             if msg["class"] == "SKY":
                 sky_info.clear()
-                for _key in ["hdop", "vdop", "pdop", "uSat", "nSat"]:
+                for _key in ("hdop", "vdop", "pdop", "uSat", "nSat"):
                     sky_info[_key] = msg[_key]
             elif msg["class"] == "TPV":
                 data = dict(msg)
@@ -26,6 +26,8 @@ async def consume_gpsd():
                 data["utc"] = dt.fromisoformat(
                     data["time"].rstrip("Z")
                 ).timestamp()
+                for _key in ("magtrack", "magvar"):
+                    data.pop(_key, None)
                 if data["mode"] > 1:
                     await redis_connection.publish("gps", json.dumps(data))
                 print(data)
