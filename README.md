@@ -10,7 +10,7 @@ Raspberry Pi.
 ### Setup and requirements
 ```
 sudo apt-get install redis-server gpsd
-python3-pip git python3-smbus  # optional: chrony gpsd-clients
+python3-pip git python3-smbus python3-gps  # optional: chrony gpsd-clients
 sudo pip3 install git+https://github.com/inmcm/micropyGPS.git
 sudo pip3 install PyGeodesy fastapi uvicorn redis geojson ahrs \
 aioredis==2 numpy websockets
