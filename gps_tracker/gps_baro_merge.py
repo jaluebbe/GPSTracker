@@ -90,6 +90,12 @@ for item in _pubsub.listen():
         continue
     if item["channel"] == "barometer":
         pressure_history.append(json.loads(item["data"]))
+        if len(imu_history) == 0:
+            continue
+        imu_pressure = {}
+        imu_pressure.update(pressure_history[-1])
+        imu_pressure.update(imu_history[-1])
+        redis_connection.publish("imu_pressure", json.dumps(imu_pressure))
     elif item["channel"] == "imu":
         imu_history.append(json.loads(item["data"]))
     elif item["channel"] == "gps":
