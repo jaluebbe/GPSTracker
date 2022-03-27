@@ -30,7 +30,6 @@ async def consume_gpsd():
                     data.pop(_key, None)
                 if data["mode"] > 1:
                     await redis_connection.publish("gps", json.dumps(data))
-                print(data)
 
 
 if __name__ == "__main__":
