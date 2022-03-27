@@ -23,7 +23,7 @@ sudo systemctl enable button_shutdown.service
 
 ```
 sudo cp etc/systemd/system/gpspoller.service /etc/systemd/system/
-chmod +x /home/pi/GPSTracker/gps_tracker/gps3_poller.py
+chmod +x /home/pi/GPSTracker/gps_tracker/gps_poller.py
 sudo systemctl enable gpspoller.service
 ```
 
