@@ -61,6 +61,9 @@ dump_ignore_keys = [
     "ecefvAcc",
     "eph",
     "sep",
+    "velN",
+    "velE",
+    "velD",
 ]
 
 
