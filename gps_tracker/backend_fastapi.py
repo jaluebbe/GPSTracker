@@ -107,6 +107,7 @@ async def get_geojson_dataset(
             [row["lon"], row["lat"], row["alt"]]
             for row in tracking_data
             if row.get("alt") is not None
+            and not (row.get("hdop") is not None and row["hdop"] > 20)
         ]
         _feature = Feature(geometry=LineString(_coords))
         _features = [_feature]
@@ -128,7 +129,9 @@ async def get_geojson_dataset(
                 ),
             ]
             for row in tracking_data
-            if row.get("pressure") is not None and row.get("alt") is not None
+            if row.get("pressure") is not None
+            and row.get("alt") is not None
+            and not (row.get("hdop") is not None and row["hdop"] > 20)
         ]
         _feature = Feature(geometry=LineString(_coords))
         _features = [_feature]
