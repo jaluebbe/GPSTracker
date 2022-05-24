@@ -54,7 +54,7 @@ async def get_websocket_connections():
 async def get_current_pressure():
     channel = "barometer"
     try:
-        pressure_data = await asyncio.wait_for(_get_channel_data(channels), 0.2)
+        pressure_data = await asyncio.wait_for(_get_channel_data(channel), 0.2)
     except asyncio.TimeoutError:
         logging.exception("/api/current_pressure")
         raise HTTPException(status_code=404, detail="no data available")
