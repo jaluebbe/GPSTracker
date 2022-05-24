@@ -15,7 +15,7 @@ old_pressure = 0
 old_pressure_utc = 0
 log_altitude = True
 log_pressure = True
-log_pressure_minutes = [20, 50]
+log_pressure_minutes = [20, 50, 0, 10, 30, 40]
 
 for item in _pubsub.listen():
     if not item[u"type"] == "message":
