@@ -9,16 +9,10 @@ It is assumed that you are using Raspberry Pi OS (Lite version) on your
 Raspberry Pi.
 ### Setup and requirements
 ```
-sudo apt-get install redis-server gpsd
+sudo apt-get install redis-server gpsd \
 python3-pip git python3-smbus python3-gps  # optional: chrony gpsd-clients
 sudo pip3 install PyGeodesy fastapi uvicorn redis geojson ahrs \
 aioredis==2 numpy websockets
-```
-
-```
-sudo cp etc/systemd/system/button_shutdown.service /etc/systemd/system/
-chmod +x /home/pi/GPSTracker/gps_tracker/button_shutdown.py
-sudo systemctl enable button_shutdown.service
 ```
 
 ```
@@ -33,6 +27,15 @@ chmod +x /home/pi/GPSTracker/gps_tracker/gps_baro_merge.py
 sudo systemctl enable gps_baro_merge.service
 ```
 
+Optional, if a shutdown button is attached between GND and GPIO21:
+```
+sudo cp etc/systemd/system/button_shutdown.service /etc/systemd/system/
+chmod +x /home/pi/GPSTracker/gps_tracker/button_shutdown.py
+sudo systemctl enable button_shutdown.service
+```
+
+Optional, if data of an attached pressure sensor should be logged
+separately:
 ```
 sudo cp etc/systemd/system/pressurelogger.service /etc/systemd/system/
 chmod +x /home/pi/GPSTracker/gps_tracker/pressure_logger.py
