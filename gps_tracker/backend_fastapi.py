@@ -8,6 +8,7 @@ import json
 import os
 import asyncio
 import logging
+from pathlib import Path
 
 if "REDIS_HOST" in os.environ:
     redis_host = os.environ["REDIS_HOST"]
@@ -17,6 +18,7 @@ redis_connection = aioredis.Redis(host=redis_host, decode_responses=True)
 
 app = FastAPI()
 app.mount("/static", StaticFiles(directory="../static"), name="static")
+app.mount("/archive", StaticFiles(directory="../logs_json"), name="archive")
 
 
 # calculate barometric altitude based on the following formula:
@@ -84,6 +86,19 @@ async def get_available_datasets(
     return datasets
 
 
+@app.get("/api/archived_datasets")
+async def get_archived_datasets(
+    category: str = Query("*", regex="^[*a-z0-9]*$"),
+    date: str = Query("*", max_length=8, regex="^[*0-9]*$"),
+):
+    dir = Path("../logs_json")
+    datasets = [
+        _file.name.rstrip(".json")
+        for _file in dir.glob(f"{category}_*_{date}.json")
+    ]
+    return datasets
+
+
 @app.get("/api/dataset/{id}.json")
 async def get_dataset(id):
     reversed_data = await redis_connection.lrange(id.replace("_", ":"), 0, -1)
@@ -94,14 +109,21 @@ async def get_dataset(id):
 @app.get("/api/dataset/{id}.geojson")
 async def get_geojson_dataset(
     id: str = Query(..., regex="^tracking_[a-z0-9]*_[0-9]{8}$"),
-    show_pressure_altitude: bool = True,
-    show_gps_altitude: bool = False,
-    ref_pressure_mbar: float = 1013.25,
+    show_pressure_altitude: bool = Query(True),
+    show_gps_altitude: bool = Query(False),
+    ref_pressure_mbar: float = Query(1013.25),
+    from_archive: bool = Query(False),
 ):
-    reversed_data = await redis_connection.lrange(id.replace("_", ":"), 0, -1)
-    data = ",\n".join(reversed_data[::-1])
+    if from_archive:
+        with open(f"../logs_json/{id}.json") as f:
+            tracking_data = json.load(f)
+    else:
+        reversed_data = await redis_connection.lrange(
+            id.replace("_", ":"), 0, -1
+        )
+        data = ",\n".join(reversed_data[::-1])
+        tracking_data = json.loads(f"[{data}]")
     height_data = []
-    tracking_data = json.loads(f"[{data}]")
     if show_gps_altitude:
         _coords = [
             [row["lon"], row["lat"], row["alt"]]
