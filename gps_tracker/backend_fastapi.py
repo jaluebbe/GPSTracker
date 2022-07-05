@@ -18,6 +18,8 @@ redis_connection = aioredis.Redis(host=redis_host, decode_responses=True)
 
 app = FastAPI()
 app.mount("/static", StaticFiles(directory="../static"), name="static")
+if not os.path.isdir("../logs_json"):
+    os.mkdir("../logs_json")
 app.mount("/archive", StaticFiles(directory="../logs_json"), name="archive")
 
 
@@ -103,7 +105,32 @@ async def get_archived_datasets(
 async def get_dataset(id):
     reversed_data = await redis_connection.lrange(id.replace("_", ":"), 0, -1)
     data = ",\n".join(reversed_data[::-1])
-    return json.loads(f"[{data}]")
+    return json.loads(f"[{data}]\n")
+
+
+@app.get("/api/move_to_archive/{id}")
+async def move_to_archive(id):
+    key = id.replace("_", ":")
+    file_name = f"../logs_json/{id}.json"
+    reversed_data = await redis_connection.lrange(key, 0, -1)
+    data = ",\n".join(reversed_data[::-1])
+    if len(data) == 0:
+        raise HTTPException(status_code=404, detail="dataset unknown.")
+    json_string = f"[{data}]\n"
+    if not os.path.exists(file_name):
+        with open(f"../logs_json/{id}.json", "w") as f:
+            f.write(json_string)
+    # compare to written or existing data.
+    with open(f"../logs_json/{id}.json") as f:
+        existing_data = f.read()
+    if existing_data == json_string:
+        # delete dataset from Redis only if a copy exists.
+        await redis_connection.delete(key)
+    else:
+        raise HTTPException(
+            status_code=409, detail="data doesn't match to existing file."
+        )
+    return json.loads(json_string)
 
 
 @app.get("/api/dataset/{id}.geojson")
