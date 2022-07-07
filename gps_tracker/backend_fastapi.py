@@ -18,9 +18,10 @@ redis_connection = aioredis.Redis(host=redis_host, decode_responses=True)
 
 app = FastAPI()
 app.mount("/static", StaticFiles(directory="../static"), name="static")
-if not os.path.isdir("../logs_json"):
-    os.mkdir("../logs_json")
-app.mount("/archive", StaticFiles(directory="../logs_json"), name="archive")
+log_directory = Path("../logs_json")
+if not log_directory.is_dir():
+    log_directory.mkdir()
+app.mount("/archive", StaticFiles(directory=log_directory), name="archive")
 
 
 # calculate barometric altitude based on the following formula:
@@ -93,10 +94,9 @@ async def get_archived_datasets(
     category: str = Query("*", regex="^[*a-z0-9]*$"),
     date: str = Query("*", max_length=8, regex="^[*0-9]*$"),
 ):
-    dir = Path("../logs_json")
     datasets = [
         _file.name.rstrip(".json")
-        for _file in dir.glob(f"{category}_*_{date}.json")
+        for _file in log_directory.glob(f"{category}_*_{date}.json")
     ]
     return datasets
 
@@ -111,18 +111,16 @@ async def get_dataset(id):
 @app.get("/api/move_to_archive/{id}")
 async def move_to_archive(id):
     key = id.replace("_", ":")
-    file_name = f"../logs_json/{id}.json"
+    file_name = log_directory.joinpath(f"{id}.json")
     reversed_data = await redis_connection.lrange(key, 0, -1)
     data = ",\n".join(reversed_data[::-1])
     if len(data) == 0:
         raise HTTPException(status_code=404, detail="dataset unknown.")
     json_string = f"[{data}]\n"
-    if not os.path.exists(file_name):
-        with open(f"../logs_json/{id}.json", "w") as f:
-            f.write(json_string)
+    if not file_name.exists():
+        file_name.write_text(json_string)
     # compare to written or existing data.
-    with open(f"../logs_json/{id}.json") as f:
-        existing_data = f.read()
+    existing_data = file_name.read_text()
     if existing_data == json_string:
         # delete dataset from Redis only if a copy exists.
         await redis_connection.delete(key)
@@ -142,7 +140,7 @@ async def get_geojson_dataset(
     from_archive: bool = Query(False),
 ):
     if from_archive:
-        with open(f"../logs_json/{id}.json") as f:
+        with log_directory.joinpath(f"{id}.json").open() as f:
             tracking_data = json.load(f)
     else:
         reversed_data = await redis_connection.lrange(
