@@ -5,9 +5,13 @@ legend.onAdd = function(map) {
     this._div = L.DomUtil.create('div', 'info legend');
     this._div.innerHTML =
         '<div style="display: grid; grid-gap: 2px"><div>Choose data</div><div><select id="trackSelect">' +
-        '<option selected value="artificial_tracking_data.json">artificial data</option>' +
-        '<option value="real_tracking_data.json">real data</option>' +
-        '<option value="airbus_tree.json">Airbus tree</option>' +
+        '<optgroup label="Redis DB" id="redisOptions"></optgroup>' +
+        '<optgroup label="Archive" id="archiveOptions"></optgroup>' +
+        '<optgroup label="Demo datasets" id="demoOptions">' +
+        '<option selected value="artificial_tracking_data.json?">artificial data</option>' +
+        '<option value="real_tracking_data.json?">real data</option>' +
+        '<option value="airbus_tree.json?">Airbus tree</option>' +
+        '</optgroup>' +
         '</select></div>' +
         '<div><input type="radio" id="showGpsAltitude" name="selectSource"><label for="showGpsAltitude">GPS altitude</label></div>' +
         '<div><input type="radio" id="showPressureAltitude" name="selectSource" checked><label for="showPressureAltitude">pressure altitude</label></div>'+
@@ -30,7 +34,7 @@ var geoJsonLayer = L.geoJson([]).addTo(map);
 function loadGeoJSON(fileName) {
     var xhr = new XMLHttpRequest();
     xhr.open('GET', fileName +
-        '?show_gps_altitude=' + document.getElementById("showGpsAltitude").checked +
+        '&show_gps_altitude=' + document.getElementById("showGpsAltitude").checked +
         '&show_pressure_altitude=' + document.getElementById("showPressureAltitude").checked +
         '&ref_pressure_mbar=' + document.getElementById("refPressureInput").value);
     xhr.setRequestHeader('Content-Type', 'application/json');
@@ -71,19 +75,44 @@ function refreshTrackingIndex() {
     xhr.setRequestHeader('Content-Type', 'application/json');
     xhr.onload = function() {
         if (xhr.status === 200) {
-            let trackSelect = document.getElementById('trackSelect');
-            let len = trackSelect.options.length;
+            let trackSelect = document.getElementById('redisOptions');
+            let len = trackSelect.children.length;
             for (var i=len; i; i--) {
-                trackSelect.options.remove(i-1);
+                trackSelect.removeChild(i-1);
             }
             let trackingIndex = JSON.parse(xhr.responseText);
             trackingIndex.sort();
             for (var i=0; i < trackingIndex.length; i++) {
                 let opt = document.createElement('option');
-                opt.value = '../api/dataset/' + trackingIndex[i] + '.geojson';
+                opt.value = '../api/dataset/' + trackingIndex[i] + '.geojson?from_archive=false';
                 let keyItems = trackingIndex[i].split('_'); 
                 opt.text = keyItems[1] + ' ' + keyItems[2];
-                trackSelect.options.add(opt);
+                trackSelect.appendChild(opt);
+            }
+        }
+    };
+    xhr.send();
+}
+
+function refreshArchiveIndex() {
+    var xhr = new XMLHttpRequest();
+    xhr.open('GET', '../api/archived_datasets?category=tracking');
+    xhr.setRequestHeader('Content-Type', 'application/json');
+    xhr.onload = function() {
+        if (xhr.status === 200) {
+            let trackSelect = document.getElementById('archiveOptions');
+            let len = trackSelect.children.length;
+            for (var i=len; i; i--) {
+                trackSelect.removeChild(i-1);
+            }
+            let trackingIndex = JSON.parse(xhr.responseText);
+            trackingIndex.sort();
+            for (var i=0; i < trackingIndex.length; i++) {
+                let opt = document.createElement('option');
+                opt.value = '../api/dataset/' + trackingIndex[i] + '.geojson?from_archive=true';
+                let keyItems = trackingIndex[i].split('_'); 
+                opt.text = keyItems[1] + ' ' + keyItems[2];
+                trackSelect.appendChild(opt);
             }
         }
     };
@@ -91,6 +120,7 @@ function refreshTrackingIndex() {
 }
 
 refreshTrackingIndex();
+refreshArchiveIndex();
 function loadTrackingData() {
     loadGeoJSON(document.getElementById("trackSelect").value);
 }
