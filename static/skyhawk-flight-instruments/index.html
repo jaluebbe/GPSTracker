@@ -1,0 +1,109 @@
+<html lang="en" dir="ltr">
+
+<head>
+    <meta charset="utf-8">
+    <link rel="stylesheet" type="text/css" href="css/flightindicators.css" />
+    <title>Skyhawk Flight Instruments</title>
+</head>
+
+<body>
+    <div class="instruments">
+        <div>
+            <span id="attitude"></span>
+            <span id="heading"></span>
+        </div>
+        <div>
+            <span id="altimeter"></span>
+            <span id="variometer"></span>
+        </div>
+    </div>
+    <script src="../jquery-3.6.0.min.js"></script>
+    <script src="js/d3.min.js"></script>
+    <script src="js/jquery.flightindicators.js"></script>
+    <script type="text/javascript">
+        function calculate_altitude(pressure, p0 = 101325) {
+            return 0.3048 * 145366.45 * (1 - Math.pow(pressure / p0, 0.190284))
+        }
+
+        function iir_filter(old_data, new_data, coefficient) {
+            return (old_data * coefficient + new_data) / (coefficient + 1);
+        }
+
+        var old_p_utc = undefined;
+        var old_pressure = undefined;
+        var vario = 0;
+        // from m/s to 100 ft/min
+        const varioScaling = 1 / 0.3048 * 60 / 100;
+        var qnh = 101300;
+        var size = Math.min(window.innerHeight / 2.05, window.innerWidth / 2.05);
+        var attitude = $.flightIndicator('#attitude', 'attitude', {
+            size: size,
+            off_flag: true,
+            showBox: false
+        });
+        var heading = $.flightIndicator('#heading', 'heading', {
+            size: size,
+            showBox: false
+        });
+        var variometer = $.flightIndicator('#variometer', 'variometer', {
+            vario: 0,
+            size: size,
+            showBox: false
+        });
+        var altimeter = $.flightIndicator('#altimeter', 'altimeter', {
+            size: size,
+            showBox: false
+        });
+        altimeter.setPressure(qnh / 100, true);
+        const altimeterSpan = document.getElementById("altimeter");
+
+        function adjustQnh(event) {
+            event.preventDefault();
+            qnh = Math.max(Math.min(104900, qnh + event.deltaY), 94600);
+            altimeter.setPressure(qnh / 100, true);
+        }
+        altimeterSpan.onwheel = adjustQnh;
+
+        window.onresize = function() {
+            let size = Math.min(window.innerHeight / 2.05, window.innerWidth / 2.05);
+            attitude.resize(size);
+            heading.resize(size);
+            variometer.resize(size);
+            altimeter.resize(size);
+        };
+
+        var ws_imu = new WebSocket("ws://" + window.location.host + "/ws/imu");
+        ws_imu.onopen = function() {
+            attitude.setOffFlag(false);
+        }
+        ws_imu.onerror = function() {
+            attitude.setOffFlag(true);
+        }
+        ws_imu.onmessage = function(event) {
+            let message = JSON.parse(event.data);
+            attitude.setRoll(message.roll);
+            attitude.setPitch(message.pitch);
+            heading.setHeading(message.yaw);
+        }
+
+        var ws_baro = new WebSocket("ws://" + window.location.host + "/ws/barometer");
+        ws_baro.onmessage = function(event) {
+            let message = JSON.parse(event.data);
+            let pressure = message.pressure;
+            let altitude = calculate_altitude(pressure, qnh);
+            altimeter.setAltitude(altitude / 0.3048);
+            if (old_p_utc != undefined) {
+                let new_vario = (
+                        calculate_altitude(pressure) -
+                        calculate_altitude(old_pressure)) /
+                    (message.p_utc - old_p_utc);
+                vario = new_vario;
+                variometer.setVario(vario * varioScaling);
+            }
+            old_p_utc = message.p_utc;
+            old_pressure = pressure;
+        }
+    </script>
+</body>
+
+</html>
