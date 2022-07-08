@@ -6,7 +6,7 @@ Optional, orientation data from an IMU may be recorded (work in progress).
 
 ## GPS tracking
 It is assumed that you are using Raspberry Pi OS (Lite version) on your 
-Raspberry Pi.
+Raspberry Pi. You should choose "pi" as username.
 ### Setup and requirements
 ```
 sudo apt-get install redis-server gpsd \
