@@ -2,8 +2,8 @@ var legend = L.control({
     position: 'topright'
 });
 legend.onAdd = function(map) {
-    var div = L.DomUtil.create('div', 'info legend');
-    div.innerHTML =
+    this._div = L.DomUtil.create('div', 'info legend');
+    this._div.innerHTML =
         '<table><tr><td>Choose data</td></tr><tr><td><select id="trackSelect">' +
         '<optgroup label="Redis DB" id="redisOptions"></optgroup>' +
         '<optgroup label="Archive" id="archiveOptions"></optgroup>' +
@@ -15,11 +15,8 @@ legend.onAdd = function(map) {
         '</optgroup>' +
         '</select></td></tr>' +
         '</table>';
-    L.DomEvent.on(div, 'click', function(ev) {
-        L.DomEvent.stopPropagation(ev);
-    });
-
-    return div;
+        L.DomEvent.disableClickPropagation(this._div);
+        return this._div;
 };
 legend.addTo(map);
 var locations = [];
