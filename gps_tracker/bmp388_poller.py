@@ -63,6 +63,10 @@ BMP388_REG_ADD_P10 = 0x44
 BMP388_REG_ADD_P11 = 0x45
 
 
+class DeviceNotFound(IOError):
+    pass
+
+
 class Bmp388:
     def __init__(self, i2c_address=I2C_ADD_BMP388):
         self.i2c_address = i2c_address
@@ -81,7 +85,7 @@ class Bmp388:
                 self._write_byte(BMP388_REG_ADD_CMD, BMP388_REG_VAL_SOFT_RESET)
                 time.sleep(0.01)
         else:
-            raise Exception("No BMP388 found.")
+            raise DeviceNotFound("No BMP388 found.")
         self._write_byte(
             BMP388_REG_ADD_PWR_CTRL,
             BMP388_REG_VAL_PRESS_EN
@@ -203,16 +207,3 @@ class Bmp388:
             "p_hostname": self.hostname,
             "p_sensor": "BMP388",
         }
-
-
-if __name__ == "__main__":
-
-    redis_connection = redis.Redis()
-    interval = 0.08
-    sensor = Bmp388()
-    while True:
-        t_start = time.time()
-        sensor_data = sensor.get_sensor_data()
-        redis_connection.publish("barometer", json.dumps(sensor_data))
-        dt = time.time() - t_start
-        time.sleep(max(0, interval - dt))

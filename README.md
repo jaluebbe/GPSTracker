@@ -42,18 +42,11 @@ chmod +x /home/pi/GPSTracker/gps_tracker/pressure_logger.py
 sudo systemctl enable pressurelogger.service
 ```
 
-To use a BMP280 pressure sensor:
+To use a pressure sensor (BME280, BMP280 or BMP388):
 ```
-sudo cp etc/systemd/system/bmp280poller.service /etc/systemd/system/
-chmod +x /home/pi/GPSTracker/gps_tracker/bmp280_poller.py
-sudo systemctl enable bmp280poller.service
-```
-
-To use a BMP388 pressure sensor:
-```
-sudo cp etc/systemd/system/bmp388poller.service /etc/systemd/system/
-chmod +x /home/pi/GPSTracker/gps_tracker/bmp388_poller.py
-sudo systemctl enable bmp388poller.service
+sudo cp etc/systemd/system/barometer_poller.service /etc/systemd/system/
+chmod +x /home/pi/GPSTracker/gps_tracker/barometer_poller.py
+sudo systemctl enable barometer_poller.service
 ```
 
 Optional, if using an LSM sensor:

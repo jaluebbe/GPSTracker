@@ -7,6 +7,10 @@ import socket
 import redis
 
 
+class DeviceNotFound(IOError):
+    pass
+
+
 class Bme280:
     def __init__(self, i2c_address=0x76):
         self.i2c_address = i2c_address
@@ -18,6 +22,9 @@ class Bme280:
     def initialize_sensor(self):
         # Get I2C bus
         self.bus = smbus.SMBus(1)
+        chip_id = self.bus.read_byte_data(self.i2c_address, 0xD0)
+        if chip_id != 0x60:
+            raise DeviceNotFound("No BME280 found.")
 
         # BME280 address, 0x76
         # Read data back from 0x88(136), 24 bytes
@@ -170,16 +177,3 @@ class Bme280:
             "humidity": round(humidity, 1),
             "p_sensor": "BME280",
         }
-
-
-if __name__ == "__main__":
-
-    redis_connection = redis.Redis()
-    interval = 0.08
-    sensor = Bme280()
-    while True:
-        t_start = time.time()
-        sensor_data = sensor.get_sensor_data()
-        redis_connection.publish("barometer", json.dumps(sensor_data))
-        dt = time.time() - t_start
-        time.sleep(max(0, interval - dt))
