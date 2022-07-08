@@ -5,6 +5,8 @@ legend.onAdd = function(map) {
     this._div = L.DomUtil.create('div', 'info legend');
     this._div.innerHTML =
         '<div style="display: grid; grid-gap: 2px"><div>Choose data</div><div><select id="trackSelect">' +
+        '<optgroup label="Redis DB" id="redisOptions"></optgroup>' +
+        '<optgroup label="Archive" id="archiveOptions"></optgroup>' +
         '</select></div>' +
         '<div><button onclick="loadTrackingData();">load data</button></div></div>';
     L.DomEvent.disableClickPropagation(this._div);
@@ -13,10 +15,10 @@ legend.onAdd = function(map) {
 legend.addTo(map);
 
 var timeDimension = new L.TimeDimension({});
-map.timeDimension = timeDimension; 
+map.timeDimension = timeDimension;
 
 var player = new L.TimeDimension.Player({
-    transitionTime: 100, 
+    transitionTime: 100,
     loop: false,
     startOver:true
 }, timeDimension);
@@ -82,32 +84,6 @@ function loadJSON(fileName) {
     xhr.send();
 }
 
-function refreshTrackingIndex() {
-    var xhr = new XMLHttpRequest();
-    xhr.open('GET', '../api/available_datasets?category=tracking');
-    xhr.setRequestHeader('Content-Type', 'application/json');
-    xhr.onload = function() {
-        if (xhr.status === 200) {
-            let trackSelect = document.getElementById('trackSelect');
-            let len = trackSelect.options.length;
-            for (var i=len; i; i--) {
-                trackSelect.options.remove(i-1);
-            }
-            let trackingIndex = JSON.parse(xhr.responseText);
-            trackingIndex.sort();
-            for (var i=0; i < trackingIndex.length; i++) {
-                let opt = document.createElement('option');
-                opt.value = '../api/dataset/' + trackingIndex[i] + '.json';
-                let keyItems = trackingIndex[i].split('_'); 
-                opt.text = keyItems[1] + ' ' + keyItems[2];
-                trackSelect.options.add(opt);
-            }
-        }
-    };
-    xhr.send();
-}
-
-refreshTrackingIndex();
 function loadTrackingData() {
     loadJSON(document.getElementById("trackSelect").value);
 }

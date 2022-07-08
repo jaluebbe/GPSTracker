@@ -5,10 +5,14 @@ legend.onAdd = function(map) {
     var div = L.DomUtil.create('div', 'info legend');
     div.innerHTML =
         '<table><tr><td>Choose data</td></tr><tr><td><select id="trackSelect">' +
-        '<option selected value="artificial_tracking_data.json">artificial data</option>' +
-        '<option value="real_tracking_data.json">real data</option>' +
-        '<option value="airbus_tree.json">Airbus tree</option>' +
-        '<option value="airports_static.json">airports</option>' +
+        '<optgroup label="Redis DB" id="redisOptions"></optgroup>' +
+        '<optgroup label="Archive" id="archiveOptions"></optgroup>' +
+        '<optgroup label="Demo datasets" id="demoOptions">' +
+        '<option selected value="artificial_tracking_data.json?">artificial data</option>' +
+        '<option value="real_tracking_data.json?">real data</option>' +
+        '<option value="airbus_tree.json?">Airbus tree</option>' +
+        '<option value="airports_static.json?">airports</option>' +
+        '</optgroup>' +
         '</select></td></tr>' +
         '</table>';
     L.DomEvent.on(div, 'click', function(ev) {
@@ -64,33 +68,6 @@ function loadGeoJSON(fileName) {
     xhr.send();
 }
 
-function refreshTrackingIndex() {
-    var xhr = new XMLHttpRequest();
-    xhr.open('GET', '../api/available_datasets?category=tracking');
-    xhr.setRequestHeader('Content-Type', 'application/json');
-    xhr.onload = function() {
-        if (xhr.status === 200) {
-            let trackSelect = document.getElementById('trackSelect');
-            let len = trackSelect.options.length;
-            for (var i=len; i; i--) {
-                trackSelect.options.remove(i-1);
-            }
-            let trackingIndex = JSON.parse(xhr.responseText);
-            trackingIndex.sort();
-            for (var i=0; i < trackingIndex.length; i++) {
-                let opt = document.createElement('option');
-                opt.value = '../api/dataset/' + trackingIndex[i] + '.geojson';
-                let keyItems = trackingIndex[i].split('_'); 
-                opt.text = keyItems[1] + ' ' + keyItems[2];
-                trackSelect.options.add(opt);
-            }
-        }
-        loadGeoJSON(document.getElementById("trackSelect").value);
-    };
-    xhr.send();
-}
-
-refreshTrackingIndex();
 document.getElementById("trackSelect").onchange = function() {
     loadGeoJSON(document.getElementById("trackSelect").value);
 };
