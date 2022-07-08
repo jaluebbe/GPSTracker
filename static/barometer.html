@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8" />
+    <title>Visualisation of barometer data with plotly.js</title>
+    <style>
+        html,
+        body {
+            height: 100%;
+            margin: 0;
+        }
+
+        #graph {
+            min-height: 400px;
+            height: 100%;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="graph"></div>
+    <script src="plotly-gl3d-2.11.1.min.js"></script>
+    <script>
+        function calculate_pressure_altitude(pressure, p0=101325) {
+            return 0.3048 * 145366.45 * (1 - Math.pow(pressure / p0, 0.190284))
+        }
+        var data = [{
+            x: [],
+            y: [],
+            type: 'scatter',
+            hovertemplate: '<b>%{y:.1f} m</b><extra></extra>'
+        }];
+        var layout = {
+            showlegend: false,
+            hovermode: 'x',
+            title: 'Visualisation of barometer data with plotly.js',
+            font: {
+                size: 16,
+            },
+            xaxis: {
+                automargin: true,
+                fixedrange: true,
+                tickangle: 0,
+                type: 'date',
+                title: {
+                    text: 'Date',
+                }
+            },
+            yaxis: {
+                automargin: true,
+                title: {
+                    text: 'pressure altitude [m]',
+                },
+            }
+        };
+        var config = {
+            responsive: true
+        };
+        Plotly.newPlot('graph', data, layout, config);
+
+        var ws = new WebSocket("ws://" + window.location.host + "/ws/barometer");
+        ws.onmessage = function(event) {
+            let message = JSON.parse(event.data);
+            var time = message.p_utc * 1000;
+            var update = {
+                x: [
+                    [time]
+                ],
+                y: [
+                    [calculate_pressure_altitude(message.pressure)]
+                ]
+            };
+            Plotly.extendTraces('graph', update, [0], 2000);
+        }
+    </script>
+</body>
+
+</html>
