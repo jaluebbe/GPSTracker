@@ -1,3 +1,4 @@
+const USE_GEOJSON = true;
 var legend = L.control({
     position: 'topright'
 });

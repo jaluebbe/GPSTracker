@@ -13,7 +13,10 @@ function refreshTrackingIndex() {
             trackingIndex.sort();
             for (var i=0; i < trackingIndex.length; i++) {
                 let opt = document.createElement('option');
-                opt.value = '../api/dataset/' + trackingIndex[i] + '.geojson?from_archive=false';
+                if (USE_GEOJSON)
+                    opt.value = '../api/dataset/' + trackingIndex[i] + '.geojson?from_archive=false';
+                else
+                    opt.value = '../api/dataset/' + trackingIndex[i] + '.json';
                 let keyItems = trackingIndex[i].split('_');
                 opt.text = keyItems[1] + ' ' + keyItems[2];
                 trackSelect.appendChild(opt);
@@ -38,7 +41,10 @@ function refreshArchiveIndex() {
             trackingIndex.sort();
             for (var i=0; i < trackingIndex.length; i++) {
                 let opt = document.createElement('option');
-                opt.value = '../api/dataset/' + trackingIndex[i] + '.geojson?from_archive=true';
+                if (USE_GEOJSON)
+                    opt.value = '../api/dataset/' + trackingIndex[i] + '.geojson?from_archive=true';
+                else
+                    opt.value = '../archive/' + trackingIndex[i] + '.json';
                 let keyItems = trackingIndex[i].split('_');
                 opt.text = keyItems[1] + ' ' + keyItems[2];
                 trackSelect.appendChild(opt);
