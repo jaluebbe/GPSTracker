@@ -73,9 +73,6 @@ class Lsm:
             self.complementary.Dt = dt
             gyr = np.array(self.get_gyro())
             q_omega = self.complementary.attitude_propagation(self.old_q, gyr)
-            roll_gyr, pitch_gyr, yaw_gyr = (
-                Quaternion(q_omega).to_angles() * RAD2DEG
-            )
 
             # Complementary Estimation
             gain = 0.02
@@ -86,22 +83,25 @@ class Lsm:
             q = q_est / np.linalg.norm(q_est)
         else:
             q = q_am
-            yaw_gyr = -heading_offset
-        roll_acc, pitch_acc, yaw_acc = Quaternion(q_am).to_angles() * RAD2DEG
-        roll, pitch, yaw = Quaternion(q).to_angles() * RAD2DEG
+        roll, pitch, yaw = Quaternion(q).to_angles()
+        vertical_acceleration = np.sum(
+            np.array(
+                [-np.sin(pitch), np.sin(roll), np.cos(pitch) * np.cos(roll)]
+            )
+            * acc
+        )
         heading_offset = heading_offset
         sensor_data = {
             "i_sensor": self.sensor,
             "i_hostname": self.hostname,
             "i_utc": round(timestamp, 3),
-            "roll": round(roll, 2),
-            "pitch": round(pitch, 2),
-            "roll_acc": round(roll_acc, 2),
-            "yaw_gyr": round(yaw_gyr + heading_offset, 2),
+            "roll": round(roll * RAD2DEG, 2),
+            "pitch": round(pitch * RAD2DEG, 2),
+            "vertical_acceleration": round(vertical_acceleration, 2),
         }
         if self.MAG_ADDRESS is not None:
             sensor_data["raw_magnetometer"] = self.raw_magnetometer
-            sensor_data["yaw"] = round(yaw + heading_offset, 2)
+            sensor_data["yaw"] = round(yaw * RAD2DEG + heading_offset, 2)
         self.old_timestamp = timestamp
         self.old_q = q
         return sensor_data
