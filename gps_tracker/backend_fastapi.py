@@ -9,6 +9,7 @@ import os
 import asyncio
 import logging
 from pathlib import Path
+from algorithms import calculate_pressure_altitude
 
 if "REDIS_HOST" in os.environ:
     redis_host = os.environ["REDIS_HOST"]
@@ -22,13 +23,6 @@ log_directory = Path("../logs_json")
 if not log_directory.is_dir():
     log_directory.mkdir()
 app.mount("/archive", StaticFiles(directory=log_directory), name="archive")
-
-
-# calculate barometric altitude based on the following formula:
-# https://www.weather.gov/media/epz/wxcalc/pressureAltitude.pdf
-def _calculate_pressure_altitude(pressure, p0=101_325):
-    altitude = 0.3048 * 145_366.45 * (1 - pow(pressure / p0, 0.190_284))
-    return altitude
 
 
 async def _get_channel_data(channel):
@@ -169,7 +163,7 @@ async def get_geojson_dataset(
                 row["lon"],
                 row["lat"],
                 round(
-                    _calculate_pressure_altitude(
+                    calculate_pressure_altitude(
                         pressure=row["pressure"], p0=ref_pressure_mbar * 100
                     ),
                     2,
