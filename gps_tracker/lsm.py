@@ -86,7 +86,11 @@ class Lsm:
         roll, pitch, yaw = Quaternion(q).to_angles()
         vertical_acceleration = np.sum(
             np.array(
-                [-np.sin(pitch), np.sin(roll), np.cos(pitch) * np.cos(roll)]
+                [
+                    -np.sin(pitch),
+                    np.cos(pitch) * np.sin(roll),
+                    np.cos(pitch) * np.cos(roll),
+                ]
             )
             * acc
         )
@@ -97,7 +101,7 @@ class Lsm:
             "i_utc": round(timestamp, 3),
             "roll": round(roll * RAD2DEG, 2),
             "pitch": round(pitch * RAD2DEG, 2),
-            "vertical_acceleration": round(vertical_acceleration, 2),
+            "vertical_acceleration": round(vertical_acceleration, 3),
         }
         if self.MAG_ADDRESS is not None:
             sensor_data["raw_magnetometer"] = self.raw_magnetometer
