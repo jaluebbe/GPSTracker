@@ -25,7 +25,7 @@ CTRL_REG1_M = 0x20
 CTRL_REG2_M = 0x21
 CTRL_REG3_M = 0x22
 
-ACCEL_SCALE = 6.1e-5  # +/- 2g full scale
+ACCEL_SCALE = 24.4e-5  # +/- 8g full scale
 GYR_SCALE = 70e-3  # +/- 2000 dps full scale
 MAG_SCALE = 14.6156e-6  # +/- 0.4 mT full scale
 
@@ -60,8 +60,8 @@ class Lsm6dsl_Lis3mdl(Lsm):
         whoami_mag = self.bus.read_byte_data(self.MAG_ADDRESS, WHO_AM_I)
         if whoami_mag != 0x3D:
             raise DeviceNotFound("LIS3MDL not found")
-        # accelerometer: 104Hz data rate, +/- 2g full scale
-        self.bus.write_byte_data(self.ACC_ADDRESS, CTRL_1_XL, 0b0100_00_0_0)
+        # accelerometer: 104Hz data rate, +/- 8g full scale
+        self.bus.write_byte_data(self.ACC_ADDRESS, CTRL_1_XL, 0b0100_11_0_0)
         # gyro: 104Hz data rate, 2000 dps full scale
         self.bus.write_byte_data(self.GYR_ADDRESS, CTRL_2_G, 0b0100_11_0_0)
         # default values
