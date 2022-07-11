@@ -28,11 +28,18 @@
         var data = [{
             x: [],
             y: [],
+            name: 'raw',
             type: 'scatter',
+            hovertemplate: '<b>%{y:.1f} m</b><extra></extra>'
+        },{
+            x: [],
+            y: [],
+            type: 'scatter',
+            name: 'kalman',
             hovertemplate: '<b>%{y:.1f} m</b><extra></extra>'
         }];
         var layout = {
-            showlegend: false,
+            showlegend: true,
             hovermode: 'x',
             title: 'Visualisation of barometer data with plotly.js',
             font: {
@@ -63,15 +70,16 @@
         ws.onmessage = function(event) {
             let message = JSON.parse(event.data);
             var time = message.p_utc * 1000;
+            var kalman = message.kalman_altitude;
             var update = {
                 x: [
-                    [time]
+                    [time], [time]
                 ],
                 y: [
-                    [calculate_pressure_altitude(message.pressure)]
+                    [calculate_pressure_altitude(message.pressure)], [kalman]
                 ]
             };
-            Plotly.extendTraces('graph', update, [0], 2000);
+            Plotly.extendTraces('graph', update, [0, 1], 2000);
         }
     </script>
 </body>
