@@ -25,13 +25,6 @@
             return 0.3048 * 145366.45 * (1 - Math.pow(pressure / p0, 0.190284))
         }
 
-        function iir_filter(old_data, new_data, coefficient) {
-            return (old_data * coefficient + new_data) / (coefficient + 1);
-        }
-
-        var old_p_utc = undefined;
-        var old_pressure = undefined;
-        var vario = 0;
         // from m/s to 100 ft/min
         const varioScaling = 1 / 0.3048 * 60 / 100;
         var qnh = 101300;
@@ -92,16 +85,10 @@
             let pressure = message.pressure;
             let altitude = calculate_altitude(pressure, qnh);
             altimeter.setAltitude(altitude / 0.3048);
-            if (old_p_utc != undefined) {
-                let new_vario = (
-                        calculate_altitude(pressure) -
-                        calculate_altitude(old_pressure)) /
-                    (message.p_utc - old_p_utc);
-                vario = new_vario;
+            let vario = message.kalman_vertical_speed;
+            if (vario != undefined) {
                 variometer.setVario(vario * varioScaling);
             }
-            old_p_utc = message.p_utc;
-            old_pressure = pressure;
         }
     </script>
 </body>
