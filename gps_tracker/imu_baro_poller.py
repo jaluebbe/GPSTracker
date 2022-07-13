@@ -17,6 +17,9 @@ if __name__ == "__main__":
 
     redis_connection = redis.Redis()
     interval = 0.04
+    # set True to enable sensor fusion with IMU.
+    # May be sensitive to shock.
+    fusion_with_imu = False
     imu_sensor = get_lsm_sensor()
     if imu_sensor is None:
         exit()
@@ -30,13 +33,20 @@ if __name__ == "__main__":
         t_start = time.time()
         baro_data = baro_sensor.get_sensor_data()
         imu_data = imu_sensor.get_sensor_data()
-        kalman_data = kia.kalman_step(
-            utc=imu_data["i_utc"],
-            h=calculate_pressure_altitude(baro_data["pressure"]),
-            h_err=0.06,
-            a=imu_data["vertical_acceleration"] - g,
-            a_err=0.05,
-        )
+        if fusion_with_imu:
+            kalman_data = kia.kalman_step(
+                utc=imu_data["i_utc"],
+                h=calculate_pressure_altitude(baro_data["pressure"]),
+                h_err=0.06,
+                a=imu_data["vertical_acceleration"] - g,
+                a_err=0.05,
+            )
+        else:
+            kalman_data = kia.kalman_step(
+                utc=imu_data["i_utc"],
+                h=calculate_pressure_altitude(baro_data["pressure"]),
+                h_err=0.06,
+            )
         if baro_data is not None:
             baro_data["imu_baro_altitude"] = kalman_data["altitude"]
             baro_data["imu_baro_vertical_speed"] = kalman_data["vertical_speed"]
