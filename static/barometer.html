@@ -70,7 +70,7 @@
         ws.onmessage = function(event) {
             let message = JSON.parse(event.data);
             var time = message.p_utc * 1000;
-            var kalman = message.kalman_altitude;
+            var kalman = message.imu_baro_altitude;
             var update = {
                 x: [
                     [time], [time]

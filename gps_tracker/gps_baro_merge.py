@@ -64,6 +64,8 @@ dump_ignore_keys = [
     "velN",
     "velE",
     "velD",
+    "imu_baro_vertical_speed",
+    "imu_baro_altitude",
 ]
 
 
@@ -89,7 +91,7 @@ def get_distance(location1, location2):
 
 
 for item in _pubsub.listen():
-    if not item[u"type"] == "message":
+    if not item["type"] == "message":
         continue
     if item["channel"] == "barometer":
         pressure_history.append(json.loads(item["data"]))

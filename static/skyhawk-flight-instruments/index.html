@@ -85,7 +85,7 @@
             let pressure = message.pressure;
             let altitude = calculate_altitude(pressure, qnh);
             altimeter.setAltitude(altitude / 0.3048);
-            let vario = message.kalman_vertical_speed;
+            let vario = message.imu_baro_vertical_speed;
             if (vario != undefined) {
                 variometer.setVario(vario * varioScaling);
             }
