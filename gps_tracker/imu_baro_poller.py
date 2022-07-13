@@ -6,7 +6,11 @@ import numpy as np
 import numpy.linalg as la
 from lsm_poller import get_lsm_sensor
 from barometer_poller import get_barometer_sensor
-from algorithms import calculate_pressure_altitude, KalmanImuAltitude
+from algorithms import (
+    calculate_pressure_altitude,
+    KalmanImuAltitude,
+    calculate_altitude_pressure,
+)
 
 
 if __name__ == "__main__":
@@ -34,8 +38,11 @@ if __name__ == "__main__":
             a_err=0.05,
         )
         if baro_data is not None:
-            baro_data["kalman_altitude"] = kalman_data["altitude"]
-            baro_data["kalman_vertical_speed"] = kalman_data["vertical_speed"]
+            baro_data["imu_baro_altitude"] = kalman_data["altitude"]
+            baro_data["imu_baro_vertical_speed"] = kalman_data["vertical_speed"]
+            baro_data["imu_baro_pressure"] = calculate_altitude_pressure(
+                kalman_data["altitude"]
+            )
         redis_connection.publish("imu", json.dumps(imu_data))
         redis_connection.publish("barometer", json.dumps(baro_data))
         dt = time.time() - t_start

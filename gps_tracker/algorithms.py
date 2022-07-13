@@ -8,6 +8,11 @@ def calculate_pressure_altitude(pressure, p0=101_325):
     return altitude
 
 
+def calculate_altitude_pressure(altitude, p0=101_325):
+    pressure = p0 * pow(1 - altitude / (0.3048 * 145_366.45), 1 / 0.190_284)
+    return pressure
+
+
 class KalmanImuAltitude:
     def __init__(self, sigma_a):
         self.x = np.zeros((3, 1))
