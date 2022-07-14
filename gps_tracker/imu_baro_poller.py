@@ -3,7 +3,6 @@ import time
 import json
 import redis
 import numpy as np
-import numpy.linalg as la
 from lsm_poller import get_lsm_sensor
 from barometer_poller import get_barometer_sensor
 from algorithms import (
@@ -17,9 +16,9 @@ if __name__ == "__main__":
 
     redis_connection = redis.Redis()
     interval = 0.04
-    # set True to enable sensor fusion with IMU.
+    # set False to disable sensor fusion with IMU.
     # May be sensitive to shock.
-    fusion_with_imu = False
+    fusion_with_imu = True
     imu_sensor = get_lsm_sensor()
     if imu_sensor is None:
         exit()
