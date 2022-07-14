@@ -70,29 +70,16 @@
         ws.onmessage = function(event) {
             let message = JSON.parse(event.data);
             var time = message.p_utc * 1000;
-            var imuBaro = message.imu_baro_altitude;
-            if (imuBaro != undefined) {
-                var update = {
-                    x: [
-                        [time], [time]
-                    ],
-                    y: [
-                        [calculate_pressure_altitude(message.pressure)],
-                        [imuBaro]
-                    ]
-                };
-                Plotly.extendTraces('graph', update, [0, 1], 20000);
-            } else {
-                var update = {
-                    x: [
-                        [time]
-                    ],
-                    y: [
-                        [calculate_pressure_altitude(message.pressure)]
-                    ]
-                };
-                Plotly.extendTraces('graph', update, [0], 20000);
-            }
+            var update = {
+                x: [
+                    [time], [time]
+                ],
+                y: [
+                    [calculate_pressure_altitude(message.pressure)],
+                    [message.imu_baro_altitude]
+                ]
+            };
+            Plotly.extendTraces('graph', update, [0, 1], 20000);
         }
     </script>
 </body>
