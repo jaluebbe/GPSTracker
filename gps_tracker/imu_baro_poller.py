@@ -46,7 +46,7 @@ if __name__ == "__main__":
                 h=calculate_pressure_altitude(baro_data["pressure"]),
                 h_err=0.06,
             )
-        if baro_data is not None:
+        if kalman_data is not None:
             baro_data["imu_baro_altitude"] = kalman_data["altitude"]
             baro_data["imu_baro_vertical_speed"] = kalman_data["vertical_speed"]
             baro_data["imu_baro_pressure"] = calculate_altitude_pressure(
