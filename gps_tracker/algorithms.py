@@ -1,5 +1,5 @@
 import numpy as np
-import numpy.linalg as la
+import scipy.linalg as la
 
 # calculate barometric altitude based on the following formula:
 # https://www.weather.gov/media/epz/wxcalc/pressureAltitude.pdf
@@ -47,7 +47,7 @@ class KalmanImuAltitude:
                 R = np.diag([h_err**2])
             y = z - np.dot(H, x_pred)
             S = np.dot(H, np.dot(P_pred, H.T)) + R
-            K = np.dot(P_pred, np.dot(H.T, la.inv(S)))
+            K = np.dot(P_pred, np.dot(H.T, la.inv(S, check_finite=False)))
             self.x = x_pred + np.dot(K, y)
             self.P = P_pred - np.dot(K, np.dot(S, K.T))
         self.old_utc = utc
