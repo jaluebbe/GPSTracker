@@ -30,13 +30,20 @@
             y: [],
             name: 'raw',
             type: 'scatter',
-            hovertemplate: '<b>%{y:.1f} m</b><extra></extra>'
-        },{
+            hovertemplate: '<b>%{y:.2f} m</b><extra></extra>'
+        }, {
             x: [],
             y: [],
             type: 'scatter',
             name: 'imu-baro',
-            hovertemplate: '<b>%{y:.1f} m</b><extra></extra>'
+            hovertemplate: '<b>%{y:.2f} m</b><extra></extra>'
+        }, {
+            x: [],
+            y: [],
+            yaxis: 'y2',
+            type: 'scatter',
+            name: 'vert. acc.',
+            hovertemplate: '<b>%{y:.2f} m/s^2</b><extra></extra>'
         }];
         var layout = {
             showlegend: true,
@@ -44,6 +51,14 @@
             title: 'Visualisation of barometer data with plotly.js',
             font: {
                 size: 16,
+            },
+            grid: {
+                rows: 2,
+                columns: 1,
+                subplots: [
+                    ['xy'],
+                    ['xy2']
+                ]
             },
             xaxis: {
                 automargin: true,
@@ -59,6 +74,12 @@
                 title: {
                     text: 'pressure altitude [m]',
                 },
+            },
+            yaxis2: {
+                automargin: true,
+                title: {
+                    text: 'vertical acc. [m/s^2]',
+                },
             }
         };
         var config = {
@@ -72,14 +93,17 @@
             var time = message.p_utc * 1000;
             var update = {
                 x: [
-                    [time], [time]
+                    [time],
+                    [time],
+                    [time]
                 ],
                 y: [
                     [calculate_pressure_altitude(message.pressure)],
-                    [message.imu_baro_altitude]
+                    [message.imu_baro_altitude],
+                    [message.vertical_acceleration]
                 ]
             };
-            Plotly.extendTraces('graph', update, [0, 1], 20000);
+            Plotly.extendTraces('graph', update, [0, 1, 2], 2000);
         }
     </script>
 </body>
