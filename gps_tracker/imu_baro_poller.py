@@ -38,8 +38,11 @@ if __name__ == "__main__":
                 h=calculate_pressure_altitude(baro_data["pressure"]),
                 h_err=0.06,
                 a=imu_data["vertical_acceleration"] - g,
-                a_err=0.05,
+                a_err=0.02,
             )
+            baro_data["vertical_acceleration"] = imu_data[
+                "vertical_acceleration"
+            ]
         else:
             kalman_data = kia.kalman_step(
                 utc=imu_data["i_utc"],

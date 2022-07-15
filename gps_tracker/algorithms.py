@@ -42,6 +42,8 @@ class KalmanImuAltitude:
         if not None in (h, h_err, a, a_err):
             z = np.array([[h], [a]])
             H = np.array([[1, 0, 0], [0, 0, 1]])
+            # workaround to handle shocks
+            a_err = a_err + np.abs(a) * 0.4
             R = np.diag([h_err**2, a_err**2])
         elif not None in (h, h_err):
             z = np.array([[h]])
