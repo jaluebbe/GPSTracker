@@ -13,8 +13,9 @@ sys.path.append("/home/pi/GPSTracker")
 redis_connection = redis.Redis(decode_responses=True)
 pressure_history = deque(maxlen=50)
 imu_history = deque(maxlen=50)
+imu_barometer_history = deque(maxlen=50)
 _pubsub = redis_connection.pubsub()
-_pubsub.subscribe("gps", "barometer", "imu")
+_pubsub.subscribe("gps", "barometer", "imu", "imu_barometer")
 old_location = None
 old_utc = None
 old_pressure = None
@@ -94,15 +95,15 @@ for item in _pubsub.listen():
     if not item["type"] == "message":
         continue
     if item["channel"] == "barometer":
-        pressure_history.append(json.loads(item["data"]))
-        if len(imu_history) == 0:
-            continue
-        imu_pressure = {}
-        imu_pressure.update(pressure_history[-1])
-        imu_pressure.update(imu_history[-1])
-        redis_connection.publish("imu_pressure", json.dumps(imu_pressure))
+        baro_data = json.loads(item["data"])
+        if baro_data.get("imu_barometer_available") != True:
+            pressure_history.append(baro_data)
     elif item["channel"] == "imu":
-        imu_history.append(json.loads(item["data"]))
+        imu_data = json.loads(item["data"])
+        if imu_data.get("imu_barometer_available") != True:
+            imu_history.append(imu_data)
+    elif item["channel"] == "imu_barometer":
+        imu_barometer_history.append(json.loads(item["data"]))
     elif item["channel"] == "gps":
         data = json.loads(item["data"])
         utc = data.get("utc")
@@ -119,6 +120,11 @@ for item in _pubsub.listen():
             imu_data = imu_history.popleft()
             if imu_data["i_utc"] > data["utc"] - 0.08:
                 data.update(imu_data)
+                break
+        while len(imu_barometer_history) > 0:
+            imu_barometer_data = imu_barometer_history.popleft()
+            if imu_barometer_data["p_utc"] > data["utc"] - 0.08:
+                data.update(imu_barometer_data)
                 break
         hdop = data.get("hdop")
         if hdop is not None:
