@@ -104,13 +104,13 @@ class Lsm:
             "i_sensor": self.sensor,
             "i_hostname": self.hostname,
             "i_utc": round(timestamp, 3),
-            "roll": round(roll * RAD2DEG, 2),
+            "roll": -round(roll * RAD2DEG, 2),
             "pitch": round(pitch * RAD2DEG, 2),
             "vertical_acceleration": round(vertical_acceleration, 3),
         }
         if self.MAG_ADDRESS is not None:
             sensor_data["raw_magnetometer"] = self.raw_magnetometer
-            sensor_data["yaw"] = round(yaw * RAD2DEG, 2)
+            sensor_data["yaw"] = -round(yaw * RAD2DEG, 2)
         self.old_timestamp = timestamp
         self.old_q = q
         return sensor_data
