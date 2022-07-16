@@ -40,9 +40,6 @@ if __name__ == "__main__":
                 a=imu_data["vertical_acceleration"] - g,
                 a_err=0.02,
             )
-            baro_data["vertical_acceleration"] = imu_data[
-                "vertical_acceleration"
-            ]
         else:
             kalman_data = kia.kalman_step(
                 utc=imu_data["i_utc"],
@@ -57,5 +54,7 @@ if __name__ == "__main__":
             )
         redis_connection.publish("imu", json.dumps(imu_data))
         redis_connection.publish("barometer", json.dumps(baro_data))
+        imu_data.update(baro_data)
+        redis_connection.publish("imu_barometer", json.dumps(imu_data))
         dt = time.time() - t_start
         time.sleep(max(0, interval - dt))

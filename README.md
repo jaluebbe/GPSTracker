@@ -56,6 +56,16 @@ chmod +x /home/pi/GPSTracker/gps_tracker/lsm_poller.py
 sudo systemctl enable lsm_poller.service
 ```
 
+If you would like to use sensor fusion, skip barometer_poller and
+lsm_poller. 
+Instead, use the imu_baro_poller:
+```
+sudo cp etc/systemd/system/imu_baro_poller.service /etc/systemd/system/
+chmod +x /home/pi/GPSTracker/gps_tracker/imu_baro_poller.py
+sudo systemctl enable imu_baro_poller.service
+```
+
+
 #### Data transfer to web page (optional)
 ```
 sudo cp etc/systemd/system/transfer_gps_data.service /etc/systemd/system/

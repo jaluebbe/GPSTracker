@@ -87,7 +87,7 @@
         };
         Plotly.newPlot('graph', data, layout, config);
 
-        var ws = new WebSocket("ws://" + window.location.host + "/ws/barometer");
+        var ws = new WebSocket("ws://" + window.location.host + "/ws/imu_barometer");
         ws.onmessage = function(event) {
             let message = JSON.parse(event.data);
             var time = message.p_utc * 1000;

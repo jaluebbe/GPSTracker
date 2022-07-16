@@ -65,23 +65,18 @@
             altimeter.resize(size);
         };
 
-        var ws_imu = new WebSocket("ws://" + window.location.host + "/ws/imu");
-        ws_imu.onopen = function() {
+        var ws_imu_baro = new WebSocket("ws://" + window.location.host + "/ws/imu_barometer");
+        ws_imu_baro.onopen = function() {
             attitude.setOffFlag(false);
         }
-        ws_imu.onerror = function() {
+        ws_imu_baro.onerror = function() {
             attitude.setOffFlag(true);
         }
-        ws_imu.onmessage = function(event) {
+        ws_imu_baro.onmessage = function(event) {
             let message = JSON.parse(event.data);
             attitude.setRoll(message.roll);
             attitude.setPitch(message.pitch);
             heading.setHeading(message.yaw);
-        }
-
-        var ws_baro = new WebSocket("ws://" + window.location.host + "/ws/barometer");
-        ws_baro.onmessage = function(event) {
-            let message = JSON.parse(event.data);
             let pressure = message.pressure;
             let altitude = calculate_altitude(pressure, qnh);
             altimeter.setAltitude(altitude / 0.3048);
