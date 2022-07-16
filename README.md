@@ -15,6 +15,14 @@ sudo pip3 install PyGeodesy fastapi uvicorn redis geojson ahrs \
 aioredis==2 numpy websockets
 ```
 
+If you would like to use the most recent version of ahrs instead of the pypi 
+version, perform the following steps:
+```
+git clone https://github.com/Mayitzin/ahrs.git
+cd ahrs
+python setup.py install
+```
+
 ```
 sudo cp etc/systemd/system/gpspoller.service /etc/systemd/system/
 chmod +x /home/pi/GPSTracker/gps_tracker/gps_poller.py
