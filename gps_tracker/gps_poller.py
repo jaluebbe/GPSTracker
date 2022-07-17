@@ -5,6 +5,7 @@ import json
 from datetime import datetime as dt
 import gps.aiogps
 import aioredis
+import subprocess
 
 
 async def consume_gpsd():
@@ -33,4 +34,6 @@ async def consume_gpsd():
 
 
 if __name__ == "__main__":
+    # set the data rate of the GPS to 2Hz
+    subprocess.call(["gpsctl", "-c", "0.5"])
     asyncio.run(consume_gpsd())
