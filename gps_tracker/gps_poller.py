@@ -13,6 +13,7 @@ async def consume_gpsd():
     redis_connection = aioredis.Redis()
     async with gps.aiogps.aiogps() as gpsd:
         sky_info = {}
+        old_utc = None
         async for msg in gpsd:
             if msg["class"] == "SKY":
                 sky_info.clear()
@@ -31,9 +32,11 @@ async def consume_gpsd():
                     data.pop(_key, None)
                 if data["mode"] > 1:
                     await redis_connection.publish("gps", json.dumps(data))
+                if old_utc is not None and data["utc"] - old_utc > 0.6:
+                    # set the data rate of the GPS to 2Hz
+                    subprocess.call(["gpsctl", "-c", "0.5"])
+                old_utc = data["utc"]
 
 
 if __name__ == "__main__":
-    # set the data rate of the GPS to 2Hz
-    subprocess.call(["gpsctl", "-c", "0.5"])
     asyncio.run(consume_gpsd())
