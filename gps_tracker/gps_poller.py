@@ -34,7 +34,7 @@ async def consume_gpsd():
                     await redis_connection.publish("gps", json.dumps(data))
                 if old_utc is not None and data["utc"] - old_utc > 0.6:
                     # set the data rate of the GPS to 2Hz
-                    subprocess.call(["gpsctl", "-c", "0.5"])
+                    subprocess.check_output(["gpsctl", "-c", "0.5"], timeout=5)
                 old_utc = data["utc"]
 
 
