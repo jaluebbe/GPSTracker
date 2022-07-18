@@ -45,6 +45,8 @@ dump_ignore_keys = [
     "p_utc",
     "i_utc",
     "raw_magnetometer",
+    "raw_gyro",
+    "raw_acceleration",
     "p_sensor",
     "i_sensor",
     "roll_acc",

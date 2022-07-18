@@ -111,6 +111,10 @@ class Lsm:
         if self.MAG_ADDRESS is not None:
             sensor_data["raw_magnetometer"] = self.raw_magnetometer
             sensor_data["yaw"] = -round(yaw * RAD2DEG, 2)
+        if self.GYR_ADDRESS is not None:
+            sensor_data["raw_gyro"] = self.raw_gyro
+        if self.ACC_ADDRESS is not None:
+            sensor_data["raw_acceleration"] = self.raw_acceleration
         self.old_timestamp = timestamp
         self.old_q = q
         return sensor_data
