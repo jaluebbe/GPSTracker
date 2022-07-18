@@ -3,4 +3,4 @@
 DEVICES="/dev/serial0"
 USBAUTO="false"
 # -n starts polling the GPS before a client connects. -s sets the device speed.
-GPSD_OPTIONS="-n -s 38400"
+GPSD_OPTIONS="-n"
