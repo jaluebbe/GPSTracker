@@ -47,10 +47,12 @@ if __name__ == "__main__":
                 h_err=0.06,
             )
         if kalman_data is not None:
-            baro_data["imu_baro_altitude"] = kalman_data["altitude"]
-            baro_data["imu_baro_vertical_speed"] = kalman_data["vertical_speed"]
-            baro_data["imu_baro_pressure"] = calculate_altitude_pressure(
-                kalman_data["altitude"]
+            baro_data["imu_baro_altitude"] = round(kalman_data["altitude"], 3)
+            baro_data["imu_baro_vertical_speed"] = round(
+                kalman_data["vertical_speed"], 3
+            )
+            baro_data["imu_baro_pressure"] = round(
+                calculate_altitude_pressure(kalman_data["altitude"]), 2
             )
         imu_data["imu_barometer_available"] = True
         baro_data["imu_barometer_available"] = True
