@@ -31,17 +31,28 @@ async def consume_gpsd():
                     .replace(tzinfo=dt.timezone.utc)
                     .timestamp()
                 )
+                if data["utc"] == old_utc:
+                    # observed duplicated entries using the MTK-3301 driver
+                    continue
                 for _key in ("magtrack", "magvar"):
                     data.pop(_key, None)
                 if data["mode"] > 1:
                     await redis_connection.publish("gps", json.dumps(data))
-                if old_utc is not None and data["utc"] - old_utc > 0.16:
-                    # set the data rate of the GPS to 10Hz
-                    subprocess.check_output(
-                        ["gpsctl", "-c", "0.1", "-s", "115200"], timeout=5
-                    )
+                if devices is not None and old_utc is not None:
+                    _driver = devices[0]["driver"]
+                    if _driver == "u-blox" and data["utc"] - old_utc > 0.16:
+                        # set the data rate of the GPS to 10Hz
+                        subprocess.check_output(
+                            ["gpsctl", "-c", "0.1", "-s", "115200"], timeout=5
+                        )
+                    elif _driver == "MTK-3301" and data["utc"] - old_utc > 0.7:
+                        # set the data rate of the GPS to 2Hz
+                        subprocess.check_output(
+                            ["gpsctl", "-c", "0.5"], timeout=8
+                        )
                 old_utc = data["utc"]
             elif msg["class"] == "DEVICES":
+                devices = msg["devices"]
                 await redis_connection.set(
                     "gps_devices", json.dumps(msg["devices"])
                 )
