@@ -31,8 +31,10 @@ def measure_pressure_noise(duration=60):
         )
     )
     print(
-        "p_mean = {:.2f} +/- {:.2f} Pa".format(
-            np.mean(pressure_history), np.std(pressure_history)
+        "p_mean = {:.2f} +/- {:.2f} Pa (+/- {:.2f} m)".format(
+            np.mean(pressure_history),
+            np.std(pressure_history),
+            np.std(pressure_history) * 0.08321,
         )
     )
     print(
