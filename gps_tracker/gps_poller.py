@@ -2,9 +2,10 @@
 import asyncio
 import socket
 import json
-from datetime import datetime as dt
+import datetime as dt
 import gps.aiogps
 import aioredis
+import subprocess
 
 
 async def consume_gpsd():
@@ -12,6 +13,8 @@ async def consume_gpsd():
     redis_connection = aioredis.Redis()
     async with gps.aiogps.aiogps() as gpsd:
         sky_info = {}
+        devices = None
+        old_utc = None
         async for msg in gpsd:
             if msg["class"] == "SKY":
                 sky_info.clear()
@@ -23,13 +26,25 @@ async def consume_gpsd():
                     continue
                 data.update(sky_info)
                 data["hostname"] = hostname
-                data["utc"] = dt.fromisoformat(
-                    data["time"].rstrip("Z")
-                ).timestamp()
+                data["utc"] = (
+                    dt.datetime.fromisoformat(data["time"].rstrip("Z"))
+                    .replace(tzinfo=dt.timezone.utc)
+                    .timestamp()
+                )
                 for _key in ("magtrack", "magvar"):
                     data.pop(_key, None)
                 if data["mode"] > 1:
                     await redis_connection.publish("gps", json.dumps(data))
+                if old_utc is not None and data["utc"] - old_utc > 0.16:
+                    # set the data rate of the GPS to 10Hz
+                    subprocess.check_output(
+                        ["gpsctl", "-c", "0.1", "-s", "115200"], timeout=5
+                    )
+                old_utc = data["utc"]
+            elif msg["class"] == "DEVICES":
+                await redis_connection.set(
+                    "gps_devices", json.dumps(msg["devices"])
+                )
 
 
 if __name__ == "__main__":

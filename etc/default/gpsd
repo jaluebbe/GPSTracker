@@ -1,0 +1,6 @@
+# These settings are made when thre GPS device is connected via serial port
+# not USB.
+DEVICES="/dev/serial0"
+USBAUTO="false"
+# -n starts polling the GPS before a client connects. -s sets the device speed.
+GPSD_OPTIONS="-n"

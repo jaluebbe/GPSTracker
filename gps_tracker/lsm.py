@@ -37,8 +37,8 @@ class Lsm:
         calibration = self.calibration
         scaling = self.ACCEL_SCALE * calibration["g"]
         centered = data - calibration["a_offset"]
-        corrected = np.array(self.calibration["a_matrix"]).dot(centered)
-        return corrected * scaling * calibration["a_sign"]
+        rotated = np.array(self.calibration["rotation"]).dot(centered)
+        return rotated * scaling
 
     def get_magnetometer(self):
         """returns magnetic flux density as [x, y, z] in units of mT."""
@@ -48,7 +48,8 @@ class Lsm:
         scaling = self.MAG_SCALE
         centered = data - calibration["m_offset"]
         corrected = np.array(self.calibration["m_matrix"]).dot(centered)
-        return corrected * scaling * calibration["m_sign"]
+        rotated = np.array(self.calibration["rotation"]).dot(corrected)
+        return rotated * scaling
 
     def get_gyro(self):
         """returns angular velocity as [x, y, z] in units of rad/s."""
@@ -57,12 +58,18 @@ class Lsm:
         calibration = self.calibration
         scaling = self.GYR_SCALE * DEG2RAD
         corrected = data - calibration["g_offset"]
-        return corrected * scaling * calibration["g_sign"]
+        rotated = np.array(self.calibration["rotation"]).dot(corrected)
+        return rotated * scaling
 
-    def get_sensor_data(self):
+    def get_sensor_data(self, gain=0.02):
+        """
+        performes sensor fusion and returns the combined sensor data.
+
+        :param float gain: complementary filter gain (defaults to 0.02)
+        :return: combined sensor data
+        """
         timestamp = time.time()
         acc = self.get_acceleration()
-        heading_offset = self.calibration["heading_offset"]
         if self.MAG_ADDRESS is not None:
             magnetometer = self.get_magnetometer()
         else:
@@ -75,7 +82,6 @@ class Lsm:
             q_omega = self.complementary.attitude_propagation(self.old_q, gyr)
 
             # Complementary Estimation
-            gain = 0.02
             if np.linalg.norm(q_omega + q_am) < np.sqrt(2):
                 q_est = (1.0 - gain) * q_omega - gain * q_am
             else:
@@ -94,18 +100,21 @@ class Lsm:
             )
             * acc
         )
-        heading_offset = heading_offset
         sensor_data = {
             "i_sensor": self.sensor,
             "i_hostname": self.hostname,
             "i_utc": round(timestamp, 3),
-            "roll": round(roll * RAD2DEG, 2),
+            "roll": -round(roll * RAD2DEG, 2),
             "pitch": round(pitch * RAD2DEG, 2),
             "vertical_acceleration": round(vertical_acceleration, 3),
         }
         if self.MAG_ADDRESS is not None:
             sensor_data["raw_magnetometer"] = self.raw_magnetometer
-            sensor_data["yaw"] = round(yaw * RAD2DEG + heading_offset, 2)
+            sensor_data["yaw"] = -round(yaw * RAD2DEG, 2)
+        if self.GYR_ADDRESS is not None:
+            sensor_data["raw_gyro"] = self.raw_gyro
+        if self.ACC_ADDRESS is not None:
+            sensor_data["raw_acceleration"] = self.raw_acceleration
         self.old_timestamp = timestamp
         self.old_q = q
         return sensor_data

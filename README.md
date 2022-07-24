@@ -10,9 +10,17 @@ Raspberry Pi. You should choose "pi" as username.
 ### Setup and requirements
 ```
 sudo apt-get install redis-server gpsd \
-python3-pip git python3-smbus python3-gps  # optional: chrony gpsd-clients
+python3-pip git python3-smbus python3-gps python3-scipy chrony gpsd-clients
 sudo pip3 install PyGeodesy fastapi uvicorn redis geojson ahrs \
 aioredis==2 numpy websockets
+```
+
+If you would like to use the most recent version of ahrs instead of the pypi 
+version, perform the following steps:
+```
+git clone https://github.com/Mayitzin/ahrs.git
+cd ahrs
+python setup.py install
 ```
 
 ```
@@ -55,6 +63,16 @@ sudo cp etc/systemd/system/lsm_poller.service /etc/systemd/system/
 chmod +x /home/pi/GPSTracker/gps_tracker/lsm_poller.py
 sudo systemctl enable lsm_poller.service
 ```
+
+If you would like to use sensor fusion, skip barometer_poller and
+lsm_poller. 
+Instead, use the imu_baro_poller:
+```
+sudo cp etc/systemd/system/imu_baro_poller.service /etc/systemd/system/
+chmod +x /home/pi/GPSTracker/gps_tracker/imu_baro_poller.py
+sudo systemctl enable imu_baro_poller.service
+```
+
 
 #### Data transfer to web page (optional)
 ```

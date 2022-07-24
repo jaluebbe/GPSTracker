@@ -38,7 +38,7 @@ if __name__ == "__main__":
                 h=calculate_pressure_altitude(baro_data["pressure"]),
                 h_err=0.06,
                 a=imu_data["vertical_acceleration"] - g,
-                a_err=0.05,
+                a_err=0.02,
             )
         else:
             kalman_data = kia.kalman_step(
@@ -47,12 +47,19 @@ if __name__ == "__main__":
                 h_err=0.06,
             )
         if kalman_data is not None:
-            baro_data["imu_baro_altitude"] = kalman_data["altitude"]
-            baro_data["imu_baro_vertical_speed"] = kalman_data["vertical_speed"]
-            baro_data["imu_baro_pressure"] = calculate_altitude_pressure(
-                kalman_data["altitude"]
+            baro_data["imu_baro_altitude"] = round(kalman_data["altitude"], 3)
+            baro_data["imu_baro_vertical_speed"] = round(
+                kalman_data["vertical_speed"], 3
             )
+            baro_data["imu_baro_pressure"] = round(
+                calculate_altitude_pressure(kalman_data["altitude"]), 2
+            )
+        imu_data["imu_barometer_available"] = True
+        baro_data["imu_barometer_available"] = True
         redis_connection.publish("imu", json.dumps(imu_data))
         redis_connection.publish("barometer", json.dumps(baro_data))
+        imu_data.update(baro_data)
+        del imu_data["imu_barometer_available"]
+        redis_connection.publish("imu_barometer", json.dumps(imu_data))
         dt = time.time() - t_start
         time.sleep(max(0, interval - dt))

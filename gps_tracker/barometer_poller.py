@@ -2,9 +2,9 @@
 import time
 import json
 import redis
-from bme280_poller import Bme280
-from bmp280_poller import Bmp280
-from bmp388_poller import Bmp388
+from bme280 import Bme280
+from bmp280 import Bmp280
+from bmp388 import Bmp388
 
 
 def get_barometer_sensor():
