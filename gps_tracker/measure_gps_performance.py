@@ -51,4 +51,3 @@ def measure_gps_performance(duration=5):
 
 while True:
     measure_gps_performance()
-    continue
