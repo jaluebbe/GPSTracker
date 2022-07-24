@@ -13,6 +13,7 @@ async def consume_gpsd():
     redis_connection = aioredis.Redis()
     async with gps.aiogps.aiogps() as gpsd:
         sky_info = {}
+        devices = None
         old_utc = None
         async for msg in gpsd:
             if msg["class"] == "SKY":
@@ -40,6 +41,10 @@ async def consume_gpsd():
                         ["gpsctl", "-c", "0.1", "-s", "115200"], timeout=5
                     )
                 old_utc = data["utc"]
+            elif msg["class"] == "DEVICES":
+                await redis_connection.set(
+                    "gps_devices", json.dumps(msg["devices"])
+                )
 
 
 if __name__ == "__main__":
