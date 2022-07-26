@@ -30,6 +30,18 @@ esriImagery = L.layerGroup([
         maxZoom: 18
     })
 ]);
+var SwissFederalGeoportal_NationalMapColor = L.tileLayer('https://wmts.geo.admin.ch/1.0.0/ch.swisstopo.pixelkarte-farbe/default/current/3857/{z}/{x}/{y}.jpeg', {
+    attribution: '&copy; <a href="https://www.swisstopo.admin.ch/">swisstopo</a>',
+    minZoom: 7,
+    maxZoom: 19,
+    bounds: [[45.398181, 5.140242], [48.230651, 11.47757]]
+});
+var SwissFederalGeoportal_SWISSIMAGE = L.tileLayer('https://wmts.geo.admin.ch/1.0.0/ch.swisstopo.swissimage/default/current/3857/{z}/{x}/{y}.jpeg', {
+    attribution: '&copy; <a href="https://www.swisstopo.admin.ch/">swisstopo</a>',
+    minZoom: 7,
+    maxZoom: 19,
+    bounds: [[45.398181, 5.140242], [48.230651, 11.47757]]
+});
 var openSeaMap = L.tileLayer('https://tiles.openseamap.org/seamark/{z}/{x}/{y}.png', {
     attribution: 'Map data: &copy; <a href="http://www.openseamap.org">OpenSeaMap</a> contributors'
 });
@@ -50,7 +62,9 @@ baseLayers = {
     "TopPlusOpen": wmsLayer,
     "OpenTopoMap": otmLayer,
     "OpenStreetMap": osmLayer,
-    "Esri Imagery": esriImagery
+    "Esri Imagery": esriImagery,
+    "swiss map": SwissFederalGeoportal_NationalMapColor,
+    "SWISSIMAGE": SwissFederalGeoportal_SWISSIMAGE
 };
 otherLayers = {
     "OpenSeaMap": openSeaMap,
@@ -61,3 +75,11 @@ var layerControl = L.control.layers(baseLayers, otherLayers, {
     collapsed: L.Browser.mobile, // hide on mobile devices
     position: 'topright'
 }).addTo(map);
+var swissBounds = L.latLngBounds(L.latLng(45.6755, 5.7349), L.latLng(47.9163, 10.6677));
+map.on('baselayerchange', function(eo) {
+    if (eo.name === "swiss map" || eo.name === "SWISSIMAGE") {
+        if (!swissBounds.overlaps(map.getBounds())) {
+            map.setView(swissBounds.getCenter());
+        }
+    }
+});
