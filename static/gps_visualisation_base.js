@@ -79,7 +79,7 @@ var swissBounds = L.latLngBounds(L.latLng(45.6755, 5.7349), L.latLng(47.9163, 10
 map.on('baselayerchange', function(eo) {
     if (eo.name === "swiss map" || eo.name === "SWISSIMAGE") {
         if (!swissBounds.overlaps(map.getBounds())) {
-            map.setView(swissBounds.getCenter());
+            map.fitBounds(swissBounds);
         }
     }
 });
