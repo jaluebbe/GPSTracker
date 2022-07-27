@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <link rel="shortcut icon" type="image/x-icon" href="favicon.ico">
+    <title>GPS position</title>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.8.0/dist/leaflet.css" integrity="sha384-Nh5DPXalR9stszhRpPoPEIgr5F2M4xe7DWJ7iqTp8FtJz0cvNdO/NvY2yjUSLfIS" crossorigin="anonymous">
+    <link rel="stylesheet" href="gps_visualisation.css">
+</head>
+
+<body>
+    <div id="map"></div>
+    <script src="https://unpkg.com/leaflet@1.8.0/dist/leaflet.js" integrity="sha384-4Dmmo81xejNChaqLOci80VhUcuEAD5pXpCtqtizmdgWEzdETh3zrJvzOhU4T79cN" crossorigin="anonymous"></script>
+    <script src="https://unpkg.com/esri-leaflet@3.0.8/dist/esri-leaflet.js" integrity="sha384-8Q1n9lzxUdCpU9MxNrwmOtCuSduQS7UzMnXkUqhwLXZpnukKQMicou/E/oEXMVLr" crossorigin="anonymous"></script>
+    <script type="text/javascript" src="gps_visualisation_base.js"></script>
+    <script>
+        map.setZoom(15);
+        map.removeEventListener('baselayerchange');
+        var myMarker = L.marker([], {
+            zIndexOffset: 1000
+        });
+        var myCircle = L.circle([], {
+            radius: 0
+        });
+        var ws = new WebSocket("ws://" + window.location.host + "/ws/gps");
+        ws.onmessage = function(event) {
+            let message = JSON.parse(event.data);
+            let location = L.latLng(message.lat, message.lon);
+            let error = message.hdop * 15;
+            myMarker.setLatLng(location);
+            myCircle.setLatLng(location);
+            myCircle.setRadius(error);
+            if (!map.hasLayer(myMarker)) {
+                myMarker.addTo(map);
+                myCircle.addTo(map);
+            }
+            if (!map.getBounds().contains(location)) {
+                map.setView(location);
+            }
+        }
+    </script>
+</body>
+
+</html>
