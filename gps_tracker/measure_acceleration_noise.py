@@ -6,6 +6,9 @@ from collections import deque
 import time
 
 
+g = 9.80665
+
+
 def measure_acceleration_noise(duration=60):
     redis_connection = redis.Redis(decode_responses=True)
     acceleration_history = deque()
@@ -29,8 +32,10 @@ def measure_acceleration_noise(duration=60):
         )
     )
     print(
-        "acc_mean = {:.3f} +/- {:.3f} m/s^2".format(
-            np.mean(acceleration_history), np.std(acceleration_history)
+        "acc_mean = {:.3f} +/- {:.3f} m/s^2, diff to g: {:.3f} m/s^2".format(
+            np.mean(acceleration_history),
+            np.std(acceleration_history),
+            np.mean(acceleration_history) - g,
         )
     )
 
