@@ -43,7 +43,7 @@ async def consume_gpsd():
                     if _driver == "u-blox" and data["utc"] - old_utc > 0.16:
                         # set the data rate of the GPS to 10Hz
                         subprocess.check_output(
-                            ["gpsctl", "-c", "0.1", "-s", "115200"], timeout=5
+                            ["gpsctl", "-c", "0.1", "-s", "115200"], timeout=8
                         )
                     elif _driver == "MTK-3301" and data["utc"] - old_utc > 0.7:
                         # set the data rate of the GPS to 2Hz
