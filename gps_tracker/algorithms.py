@@ -14,10 +14,10 @@ def calculate_altitude_pressure(altitude, p0=101_325):
 
 
 class KalmanImuAltitude:
-    def __init__(self, sigma_a):
+    def __init__(self, process_noise_gain=0.05):
         self.x = np.zeros((3, 1))
         self.P = np.diag([1e4**2, 1e1**2, 1e2**2])
-        self.sigma_a = sigma_a
+        self.process_noise_gain = process_noise_gain
         self.old_utc = None
 
     def kalman_step(self, utc, h, h_err, a=None, a_err=None):
@@ -26,7 +26,9 @@ class KalmanImuAltitude:
             return
         t = utc - self.old_utc
         # process noise matrix
-        Q = self.sigma_a**2 * np.array(
+        Q = (
+            np.max([0, np.abs(a) - a_err]) * self.process_noise_gain
+        ) ** 2 * np.array(
             [
                 [t**4 / 4, t**3 / 2, t**2 / 2],
                 [t**3 / 2, t**2, t],
@@ -39,16 +41,9 @@ class KalmanImuAltitude:
         x_pred = np.dot(F, self.x)
         P_pred = np.dot(F, np.dot(self.P, F.T)) + Q
         # update
-        if not None in (h, h_err, a, a_err):
-            z = np.array([[h], [a]])
-            H = np.array([[1, 0, 0], [0, 0, 1]])
-            # workaround to handle shocks
-            a_err = a_err + np.abs(a) * 0.4
-            R = np.diag([h_err**2, a_err**2])
-        elif not None in (h, h_err):
-            z = np.array([[h]])
-            H = np.array([[1, 0, 0]])
-            R = np.diag([h_err**2])
+        z = np.array([[h]])
+        H = np.array([[1, 0, 0]])
+        R = np.diag([h_err**2])
         y = z - np.dot(H, x_pred)
         S = np.dot(H, np.dot(P_pred, H.T)) + R
         K = np.dot(P_pred, np.dot(H.T, la.inv(S, check_finite=False)))
