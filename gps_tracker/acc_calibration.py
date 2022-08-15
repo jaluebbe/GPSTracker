@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 # code is partly based on https://gist.github.com/ViennaMike/d8b8f9636694c7edf4f115b28c9378c0
-import time
 import json
+import redis
 import numpy as np
-import lsm_poller
+
+redis_connection = redis.Redis(decode_responses=True)
 
 
 def _process_and_save(a_min, a_max, g):
@@ -21,37 +22,52 @@ def _process_and_save(a_min, a_max, g):
         "g": g,
     }
     print(json.dumps(calibration, indent=4))
-    with open("new_calibration.json", "w") as json_file:
-        json.dump(calibration, json_file)
+    redis_connection.set("a_offset", json.dumps(a_offset))
+    print("saved a_offset to Redis.")
 
 
 def perform_calibration():
-    sensor = lsm_poller.get_lsm_sensor()
+    redis_connection = redis.Redis(decode_responses=True)
     measuring_duration = 5
     g = 9.80665  # could be changed to local conditions during calibration.
     running_a_min = (32767, 32767, 32767)
     running_a_max = (-32768, -32768, -32768)
-    input("press (enter) to start calibration: ")
-    t_start = time.time()
+    print(
+        "Alter the orientation of the device between +/- x/y/z orientation. "
+        "Do not move the device during each calibration step."
+    )
+    input("Press (enter) to start a calibration step: ")
     while True:
-        now = time.time()
-        if t_start + measuring_duration < now:
-            response = input(
-                f"{measuring_duration}s of calibration completed.\n"
-                f"min values: {running_a_min}\nmax values: {running_a_max}\n"
-                "Press (a) to abort, (s) to save or (enter) to continue: "
-            )
-            if response == "a":
-                break
-            elif response == "s":
-                _process_and_save(running_a_min, running_a_max, g)
-                break
-            else:
-                t_start = time.time()
-        data = sensor.update_raw_acceleration()
-        running_a_min = tuple(map(lambda x, y: min(x, y), running_a_min, data))
-        running_a_max = tuple(map(lambda x, y: max(x, y), running_a_max, data))
-        time.sleep(0.02)
+        _pubsub = redis_connection.pubsub()
+        _pubsub.subscribe("imu")
+        t_start = None
+        for item in _pubsub.listen():
+            if not item["type"] == "message":
+                continue
+            if item["channel"] == "imu":
+                _data = json.loads(item["data"])
+                if t_start is None:
+                    t_start = _data["i_utc"]
+                elif _data["i_utc"] > t_start + measuring_duration:
+                    t_stop = _data["i_utc"]
+                    break
+                a_data = _data["raw_acceleration"]
+                running_a_min = tuple(
+                    map(lambda x, y: min(x, y), running_a_min, a_data)
+                )
+                running_a_max = tuple(
+                    map(lambda x, y: max(x, y), running_a_max, a_data)
+                )
+        response = input(
+            f"{measuring_duration}s of calibration completed.\n"
+            f"min values: {running_a_min}\nmax values: {running_a_max}\n"
+            "Press (a) to abort, (s) to save or (enter) to continue: "
+        )
+        if response == "a":
+            break
+        elif response == "s":
+            _process_and_save(running_a_min, running_a_max, g)
+            break
 
 
 if __name__ == "__main__":

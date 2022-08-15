@@ -2,8 +2,8 @@
 # code is partly based on https://github.com/pimoroni/enviro-phat/blob/master/library/envirophat/lsm303d.py
 import time
 import json
-import os
 import socket
+import redis
 import numpy as np
 from ahrs.filters import Complementary
 from ahrs import Quaternion, RAD2DEG, DEG2RAD
@@ -12,6 +12,7 @@ from ahrs import Quaternion, RAD2DEG, DEG2RAD
 class Lsm:
     def __init__(self, config_path=None):
         self.hostname = socket.gethostname()
+        self.redis_connection = redis.Redis(decode_responses=True)
         self.GYR_ADDRESS = None
         self.MAG_ADDRESS = None
         self.ACC_ADDRESS = None
@@ -21,21 +22,26 @@ class Lsm:
         self.old_q = None
         self.old_timestamp = None
         self.complementary = Complementary()
-        pwd = os.path.dirname(os.path.abspath(__file__))
-        if config_path is None:
-            config_path = os.path.join(pwd, "lsm_calibration.json")
-        if not os.path.isfile(config_path):
-            # no calibration data present, using default calibration
-            config_path = os.path.join(pwd, "lsm_calibration_example.json")
-        with open(config_path) as json_file:
-            self.calibration = json.load(json_file)
+        self.calibration = {
+            "g": 9.80665,
+            "g_offset": [0.0, 0.0, 0.0],
+            "a_offset": [0.0, 0.0, 0.0],
+            "m_offset": [0.0, 0.0, 0.0],
+            "m_matrix": [[1, 0, 0], [0, 1, 0], [0, 0, 1]],
+            "rotation": [[0, -1, 0], [1, 0, 0], [0, 0, 1]],
+        }
+        for _key in self.calibration.keys():
+            _value = self.redis_connection.get(_key)
+            if _value is None:
+                continue
+            self.calibration[_key] = json.loads(_value)
 
     def get_acceleration(self):
         """returns acceleration as [x, y, z] in units of m/s^2."""
         self.update_raw_acceleration()
         data = np.array(self.raw_acceleration)
         calibration = self.calibration
-        scaling = self.ACCEL_SCALE * calibration["g"]
+        scaling = self.ACCEL_SCALE * self.calibration["g"]
         centered = data - calibration["a_offset"]
         rotated = np.array(self.calibration["rotation"]).dot(centered)
         return rotated * scaling

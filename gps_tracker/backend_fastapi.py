@@ -1,6 +1,7 @@
 from fastapi import FastAPI, HTTPException, Query, WebSocket, status
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import RedirectResponse
+from typing import List
 from geojson import FeatureCollection, Feature, LineString
 import aioredis
 import websockets.exceptions
@@ -8,8 +9,11 @@ import json
 import os
 import asyncio
 import logging
+import numpy as np
 from pathlib import Path
+from ellipsoid_fit import ellipsoid_fit, data_regularize
 from algorithms import calculate_pressure_altitude
+
 
 if "REDIS_HOST" in os.environ:
     redis_host = os.environ["REDIS_HOST"]
@@ -220,3 +224,24 @@ async def websocket_endpoint(websocket: WebSocket, channel: str):
             await redis_connection.publish("ws_connections", ws_connections)
             # normal closure with close code 1000
             break
+
+
+@app.post("/api/calibrate_magnetometer")
+async def calibrate_magnetometer(data: List):
+    # based on https://github.com/aleksandrbazhin/ellipsoid_fit_python
+    center, evecs, radii, v = ellipsoid_fit(
+        data_regularize(np.array(data), divs=8)
+    )
+    a, b, c = radii
+    r = (a * b * c) ** (1.0 / 3.0)
+    D = np.array([[r / a, 0.0, 0.0], [0.0, r / b, 0.0], [0.0, 0.0, r / c]])
+    # http://www.cs.brandeis.edu/~cs155/Lecture_07_6.pdf
+    # affine transformation from ellipsoid to sphere (translation excluded)
+    TR = evecs.dot(D).dot(evecs.T)
+    calibration = {
+        "m_matrix": TR.tolist(),
+        "m_offset": center.tolist()
+    }
+    for _key, _value in calibration.items():
+        await redis_connection.set(_key, json.dumps(_value))
+    return calibration

@@ -48,6 +48,7 @@
             <button onclick="clearTraces()">Clear data</button>
             <button onclick="connect()">Connect</button>
             <button onclick="stopAcquisition()">Stop acquisition</button>
+            <button onclick="calibrate()">Calibrate</button>
         </div>
     </div>
     <script src="plotly-gl3d-2.11.1.min.js"></script>
@@ -123,6 +124,17 @@
                 ws.close(1000);
             }
             console.log(JSON.stringify(getMagData()));
+        }
+        calibrate = function() {
+            var xhr = new XMLHttpRequest();
+            xhr.open('POST', '../api/calibrate_magnetometer');
+            xhr.setRequestHeader('Content-Type', 'application/json');
+            xhr.onload = function() {
+                if (xhr.status === 200) {
+                    console.log(JSON.parse(xhr.responseText));
+                }
+            }
+            xhr.send(JSON.stringify(getMagData()));
         }
         clearTraces = function() {
             Plotly.extendTraces('myGraph', {
