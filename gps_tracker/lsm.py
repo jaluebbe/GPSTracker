@@ -30,6 +30,7 @@ class Lsm:
             "m_matrix": [[1, 0, 0], [0, 1, 0], [0, 0, 1]],
             "rotation": [[0, -1, 0], [1, 0, 0], [0, 0, 1]],
         }
+        self.use_ellipsoid_correction = False
         for _key in self.calibration.keys():
             _value = self.redis_connection.get(_key)
             if _value is None:
@@ -53,7 +54,10 @@ class Lsm:
         calibration = self.calibration
         scaling = self.MAG_SCALE
         centered = data - calibration["m_offset"]
-        corrected = np.array(self.calibration["m_matrix"]).dot(centered)
+        if self.use_ellipsoid_correction:
+            corrected = np.array(self.calibration["m_matrix"]).dot(centered)
+        else:
+            corrected = centered
         rotated = np.array(self.calibration["rotation"]).dot(corrected)
         return rotated * scaling
 
