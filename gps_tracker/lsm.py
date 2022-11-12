@@ -73,60 +73,68 @@ class Lsm:
 
     def get_sensor_data(self, gain=0.02):
         """
-        performes sensor fusion and returns the combined sensor data.
+        Collects and returns sensor data. May perform sensor fusion and
+        add the combined sensor data to the output. Sensor fusion is disabled
+        if the gain is None.
 
         :param float gain: complementary filter gain (defaults to 0.02)
-        :return: combined sensor data
+        :return: sensor data
         """
         timestamp = time.time()
-        acc = self.get_acceleration()
-        if self.MAG_ADDRESS is not None:
-            magnetometer = self.get_magnetometer()
-        else:
-            magnetometer = None
-        q_am = self.complementary.am_estimation(acc, magnetometer)
-        gyr = self.get_gyro()
-        if self.old_timestamp is not None and self.GYR_ADDRESS is not None:
-            dt = timestamp - self.old_timestamp
-            self.complementary.Dt = dt
-            q_omega = self.complementary.attitude_propagation(self.old_q, gyr)
-
-            # Complementary Estimation
-            if np.linalg.norm(q_omega + q_am) < np.sqrt(2):
-                q_est = (1.0 - gain) * q_omega - gain * q_am
-            else:
-                q_est = (1.0 - gain) * q_omega + gain * q_am
-            q = q_est / np.linalg.norm(q_est)
-        else:
-            q = q_am
-        roll, pitch, yaw = Quaternion(q).to_angles()
-        vertical_acceleration = np.sum(
-            np.array(
-                [
-                    -np.sin(pitch),
-                    np.cos(pitch) * np.sin(roll),
-                    np.cos(pitch) * np.cos(roll),
-                ]
-            )
-            * acc
-        )
         sensor_data = {
             "i_sensor": self.sensor,
             "i_hostname": self.hostname,
             "i_utc": round(timestamp, 3),
-            "roll": -round(roll * RAD2DEG, 2),
-            "pitch": round(pitch * RAD2DEG, 2),
-            "vertical_acceleration": round(vertical_acceleration, 3),
         }
-        if self.MAG_ADDRESS is not None:
-            sensor_data["raw_magnetometer"] = self.raw_magnetometer
-            sensor_data["yaw"] = -round(yaw * RAD2DEG, 2)
-        if self.GYR_ADDRESS is not None:
-            sensor_data["raw_gyro"] = self.raw_gyro
-            if gyr is not None:
-                sensor_data["gyro"] = np.round(gyr, 3).tolist()
         if self.ACC_ADDRESS is not None:
+            acc = self.get_acceleration()
             sensor_data["raw_acceleration"] = self.raw_acceleration
-        self.old_timestamp = timestamp
-        self.old_q = q
+        if self.MAG_ADDRESS is not None:
+            magnetometer = self.get_magnetometer()
+            sensor_data["raw_magnetometer"] = self.raw_magnetometer
+        else:
+            magnetometer = None
+        if self.GYR_ADDRESS is not None:
+            gyr = self.get_gyro()
+            sensor_data["raw_gyro"] = self.raw_gyro
+            sensor_data["gyro"] = np.round(gyr, 3).tolist()
+
+        if self.ACC_ADDRESS is not None and gain is not None:
+            q_am = self.complementary.am_estimation(acc, magnetometer)
+            if self.old_timestamp is not None and self.GYR_ADDRESS is not None:
+                dt = timestamp - self.old_timestamp
+                self.complementary.Dt = dt
+                q_omega = self.complementary.attitude_propagation(
+                    self.old_q, gyr
+                )
+                # Complementary Estimation
+                if np.linalg.norm(q_omega + q_am) < np.sqrt(2):
+                    q_est = (1.0 - gain) * q_omega - gain * q_am
+                else:
+                    q_est = (1.0 - gain) * q_omega + gain * q_am
+                q = q_est / np.linalg.norm(q_est)
+            else:
+                q = q_am
+            roll, pitch, yaw = Quaternion(q).to_angles()
+            vertical_acceleration = np.sum(
+                np.array(
+                    [
+                        -np.sin(pitch),
+                        np.cos(pitch) * np.sin(roll),
+                        np.cos(pitch) * np.cos(roll),
+                    ]
+                )
+                * acc
+            )
+            sensor_data.update(
+                {
+                    "roll": -round(roll * RAD2DEG, 2),
+                    "pitch": round(pitch * RAD2DEG, 2),
+                    "vertical_acceleration": round(vertical_acceleration, 3),
+                }
+            )
+            if self.MAG_ADDRESS is not None:
+                sensor_data["yaw"] = -round(yaw * RAD2DEG, 2)
+            self.old_timestamp = timestamp
+            self.old_q = q
         return sensor_data
