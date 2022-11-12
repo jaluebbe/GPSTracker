@@ -85,10 +85,10 @@ class Lsm:
         else:
             magnetometer = None
         q_am = self.complementary.am_estimation(acc, magnetometer)
+        gyr = self.get_gyro()
         if self.old_timestamp is not None and self.GYR_ADDRESS is not None:
             dt = timestamp - self.old_timestamp
             self.complementary.Dt = dt
-            gyr = np.array(self.get_gyro())
             q_omega = self.complementary.attitude_propagation(self.old_q, gyr)
 
             # Complementary Estimation
@@ -123,6 +123,8 @@ class Lsm:
             sensor_data["yaw"] = -round(yaw * RAD2DEG, 2)
         if self.GYR_ADDRESS is not None:
             sensor_data["raw_gyro"] = self.raw_gyro
+            if gyr is not None:
+                sensor_data["gyro"] = np.round(gyr, 3).tolist()
         if self.ACC_ADDRESS is not None:
             sensor_data["raw_acceleration"] = self.raw_acceleration
         self.old_timestamp = timestamp
