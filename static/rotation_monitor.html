@@ -1,0 +1,132 @@
+<html lang="en" dir="ltr">
+
+<head>
+    <meta charset="utf-8">
+    <link rel="shortcut icon" type="image/x-icon" href="favicon_carousel.ico">
+    <title>Rotation Monitor</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        table,
+        th,
+        td {
+            border: 1px solid black;
+        }
+
+        td {
+            text-align: center;
+        }
+
+        body {
+            font-family: Verdana, Geneva, Arial, sans-serif;
+            font-size: 16px;
+        }
+    </style>
+</head>
+
+<body>
+    <script src="gauge.min.js"></script>
+    <div style="text-align: center;"><canvas id="canvas-preview" width="380" height="230"></canvas></div>
+    <table style="width:100%">
+        <tr>
+            <td style="width: 50%">rotations</td>
+            <td style="width: 50%"><span id="rotations"></span></td>
+        </tr>
+        <tr>
+            <td>trips</td>
+            <td><span id="trips"></span></td>
+        </tr>
+        <tr>
+            <td>duration</td>
+            <td id="duration_cell"><span id="duration"></span></td>
+        </tr>
+    </table>
+    <script>
+        const opts = {
+            angle: 0.15, /// The span of the gauge arc
+            lineWidth: 0.44, // The line thickness
+            pointer: {
+                length: 0.63, // Relative to gauge radius
+                strokeWidth: 0.035 // The thickness
+            },
+            limitMax: true,
+            limitMin: true,
+            strokeColor: '#E0E0E0',
+            staticLabels: {
+                font: "14px sans-serif", // Specifies font
+                labels: [-1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10], // Print labels at these values
+                color: "#000000", // Optional: Label text color
+                fractionDigits: 0 // Optional: Numerical precision. 0=round off.
+            },
+            renderTicks: {
+                divisions: 11,
+                divWidth: 1.6,
+                divLength: 0.5,
+                divColor: '#333333',
+                subDivisions: 4,
+                subLength: 0.3,
+                subWidth: 0.4,
+                subColor: '#666666'
+            },
+            staticZones: [{
+                    strokeStyle: "#F03E3E",
+                    min: -1,
+                    max: 0
+                }, // Red
+                {
+                    strokeStyle: "#FFDD00",
+                    min: 0,
+                    max: 3
+                }, // Yellow
+                {
+                    strokeStyle: "#30B32D",
+                    min: 3,
+                    max: 6
+                }, // Green
+                {
+                    strokeStyle: "#FFDD00",
+                    min: 6,
+                    max: 8
+                }, // Yellow
+                {
+                    strokeStyle: "#F03E3E",
+                    min: 8,
+                    max: 10
+                } // Red
+            ]
+        };
+        const target = document.getElementById('canvas-preview');
+        const gauge = new Gauge(target).setOptions(opts);
+        gauge.maxValue = 10; // set max gauge value
+        gauge.setMinValue(-1); // set min value
+        var ws = undefined;
+
+        function connect() {
+            ws_rotation = new WebSocket("ws://" + window.location.host + "/ws/rotation");
+            ws_rotation.onmessage = function(event) {
+                let message = JSON.parse(event.data);
+                gauge.set(message.rpm);
+                rotations.innerHTML = message.rotations;
+                trips.innerHTML = message.trips;
+                if (message.on_trip) {
+                    if (message.trip_duration >= 10)
+                        duration_cell.style.background = 'lightgreen';
+                    else
+                        duration_cell.style.background = 'lightyellow';
+                    duration.innerHTML = message.trip_duration + "&nbsp;s";
+                } else {
+                    duration.innerHTML = "";
+                    duration_cell.style.background = '';
+                }
+            }
+            ws_rotation.onclose = function(e) {
+                console.log('Socket is closed. Reconnect will be attempted in 5 seconds.', e.reason);
+                setTimeout(function() {
+                    connect();
+                }, 5000);
+            }
+        }
+        connect();
+    </script>
+</body>
+
+</html>
