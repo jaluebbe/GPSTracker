@@ -3,7 +3,6 @@ import json
 import redis
 import numpy as np
 from collections import deque
-import lsm_poller
 
 
 if __name__ == "__main__":
