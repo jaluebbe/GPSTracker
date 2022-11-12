@@ -197,6 +197,7 @@ async def websocket_endpoint(websocket: WebSocket, channel: str):
         "transfer_data",
         "ws_connections",
         "imu_barometer",
+        "rotation",
     ]
     await websocket.accept()
     if channel not in supported_channels:
