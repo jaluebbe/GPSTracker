@@ -31,11 +31,19 @@ class Lsm:
             "rotation": [[0, -1, 0], [1, 0, 0], [0, 0, 1]],
         }
         self.use_ellipsoid_correction = False
+        self.load_calibration()
+
+    def load_calibration(self):
         for _key in self.calibration.keys():
             _value = self.redis_connection.get(_key)
             if _value is None:
                 continue
             self.calibration[_key] = json.loads(_value)
+        self.redis_connection.set("calibration_updated", 0)
+
+    def check_calibration(self):
+        if self.redis_connection.get("calibration_updated") == "1":
+            self.load_calibration()
 
     def get_acceleration(self):
         """returns acceleration as [x, y, z] in units of m/s^2."""
@@ -86,6 +94,7 @@ class Lsm:
             "i_hostname": self.hostname,
             "i_utc": round(timestamp, 3),
         }
+        self.check_calibration()
         if self.ACC_ADDRESS is not None:
             acc = self.get_acceleration()
             sensor_data["raw_acceleration"] = self.raw_acceleration

@@ -13,6 +13,7 @@ import numpy as np
 from pathlib import Path
 from ellipsoid_fit import ellipsoid_fit, data_regularize
 from algorithms import calculate_pressure_altitude
+import gyr_calibration
 
 
 if "REDIS_HOST" in os.environ:
@@ -62,6 +63,11 @@ async def get_current_pressure():
         logging.exception("/api/current_pressure")
         raise HTTPException(status_code=404, detail="no data available")
     return pressure_data
+
+
+@app.get("/api/calibrate_gyro")
+def calibrate_gyro():
+    return gyr_calibration.calibrate()
 
 
 @app.get("/api/current_orientation")
@@ -239,10 +245,7 @@ async def calibrate_magnetometer(data: List):
     # http://www.cs.brandeis.edu/~cs155/Lecture_07_6.pdf
     # affine transformation from ellipsoid to sphere (translation excluded)
     TR = evecs.dot(D).dot(evecs.T)
-    calibration = {
-        "m_matrix": TR.tolist(),
-        "m_offset": center.tolist()
-    }
+    calibration = {"m_matrix": TR.tolist(), "m_offset": center.tolist()}
     for _key, _value in calibration.items():
         await redis_connection.set(_key, json.dumps(_value))
     return calibration

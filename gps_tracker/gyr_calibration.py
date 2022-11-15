@@ -5,8 +5,7 @@ import numpy as np
 from collections import deque
 
 
-if __name__ == "__main__":
-    measuring_duration = 5
+def calibrate(measuring_duration=5):
     redis_connection = redis.Redis(decode_responses=True)
     d = deque()
     _pubsub = redis_connection.pubsub()
@@ -25,4 +24,10 @@ if __name__ == "__main__":
             d.append(_data["raw_gyro"])
     g_offset = list(np.median(d, axis=0))
     redis_connection.set("g_offset", json.dumps(g_offset))
+    redis_connection.set("calibration_updated", 1)
+    return g_offset
+
+
+if __name__ == "__main__":
+    g_offset = calibrate(measuring_duration=5)
     print(f"saved g_offset={g_offset} to Redis.")
