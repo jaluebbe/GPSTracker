@@ -62,7 +62,7 @@ if __name__ == "__main__":
             mag_y_max = max(mag_y_max, mag_y)
             heading = (
                 np.arctan2(
-                    mag_y - 0.5 * (mag_y_min + mag_y_max),
+                    -(mag_y - 0.5 * (mag_y_min + mag_y_max)),
                     mag_x - 0.5 * (mag_x_min + mag_x_max),
                 )
                 / np.pi
@@ -85,7 +85,7 @@ if __name__ == "__main__":
                 if rotations > old_rotations + 1:
                     redis_connection.set("rotations", json.dumps(rotations))
                     old_rotations = rotations
-                compass_rotations -= heading_diff(heading, heading_old) / 360
+                compass_rotations += heading_diff(heading, heading_old) / 360
                 if compass_rotations > old_compass_rotations + 1:
                     redis_connection.set(
                         "compass_rotations", json.dumps(compass_rotations)
