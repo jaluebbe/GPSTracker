@@ -32,6 +32,10 @@
             <td style="width: 50%"><span id="rotations"></span></td>
         </tr>
         <tr>
+            <td style="width: 50%">compass rotations</td>
+            <td style="width: 50%"><span id="compass_rotations"></span></td>
+        </tr>
+        <tr>
             <td>trips</td>
             <td><span id="trips"></span></td>
         </tr>
@@ -106,6 +110,7 @@
                 let message = JSON.parse(event.data);
                 gauge.set(message.rpm);
                 rotations.innerHTML = message.rotations;
+                compass_rotations.innerHTML = message.compass_rotations;
                 trips.innerHTML = message.trips;
                 if (message.on_trip) {
                     if (message.trip_duration >= 10)
