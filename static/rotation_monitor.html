@@ -25,6 +25,7 @@
 
 <body>
     <script src="gauge.min.js"></script>
+    <script src="beep.js"></script>
     <div style="text-align: center;"><canvas id="canvas-preview" width="380" height="230"></canvas></div>
     <table style="width:100%">
         <tr>
@@ -40,11 +41,47 @@
             <td><span id="trips"></span></td>
         </tr>
         <tr>
-            <td>duration</td>
+            <td>trip duration</td>
             <td id="duration_cell"><span id="duration"></span></td>
+        </tr>
+        <tr>
+            <td>min. duration (s)</td>
+            <td style="text-align: left;">
+                <input type="radio" id="minDurationA" name="minDurationRadio" checked onchange="toggleMinDuration();">
+                <input type="number" id="minDurationInputA" value="160" min="10" max="180" step="10" onchange="toggleMinDuration();" pattern="\d*"><br>
+                <input type="radio" id="minDurationB" name="minDurationRadio"onchange="toggleMinDuration();">
+                <input type="number" id="minDurationInputB" value="130" min="10" max="180" step="10" onchange="toggleMinDuration();" pattern="\d*">
+            </td>
+        </tr>
+        <tr>
+            <td>sound</td>
+            <td style="text-align: left;">
+                <input type="radio" id="soundOff" name="soundEnabled" checked onchange="toggleSound()">
+                <label for="soundOff">off</label><br>
+                <input type="radio" id="soundShort" name="soundEnabled" onchange="toggleSound()">
+                <label for="soundShort">short</label><br>
+                <input type="radio" id="soundLong" name="soundEnabled" onchange="toggleSound()">
+                <label for="soundLong">long</label><br>
+            </td>
         </tr>
     </table>
     <script>
+        function toggleMinDuration() {
+            if (minDurationA.checked) {
+                minTripDuration = parseFloat(minDurationInputA.value);
+            } else {
+                minTripDuration = parseFloat(minDurationInputB.value);
+            }
+        }
+        function toggleSound() {
+            if (!soundOff.checked) {
+                console.log('enable sound');
+                myAudioContext.resume();
+            } else {
+                console.log('disable sound');
+                myAudioContext.suspend();
+            }
+        }
         const opts = {
             angle: 0.15, /// The span of the gauge arc
             lineWidth: 0.44, // The line thickness
@@ -79,30 +116,33 @@
                 {
                     strokeStyle: "#FFDD00",
                     min: 0,
-                    max: 3
+                    max: 2.5
                 }, // Yellow
                 {
                     strokeStyle: "#30B32D",
-                    min: 3,
-                    max: 6
+                    min: 2.5,
+                    max: 5.5
                 }, // Green
                 {
                     strokeStyle: "#FFDD00",
-                    min: 6,
-                    max: 8
+                    min: 5.5,
+                    max: 7.5
                 }, // Yellow
                 {
                     strokeStyle: "#F03E3E",
-                    min: 8,
+                    min: 7.5,
                     max: 10
                 } // Red
             ]
         };
         const target = document.getElementById('canvas-preview');
         const gauge = new Gauge(target).setOptions(opts);
+        const volume = 100;
+        var minTripDuration = 16;
         gauge.maxValue = 10; // set max gauge value
         gauge.setMinValue(-1); // set min value
         var ws = undefined;
+        var beeped = false;
 
         function connect() {
             ws_rotation = new WebSocket("ws://" + window.location.host + "/ws/rotation");
@@ -113,14 +153,60 @@
                 compass_rotations.innerHTML = message.compass_rotations;
                 trips.innerHTML = message.trips;
                 if (message.on_trip) {
-                    if (message.trip_duration >= 10)
+                    if (message.trip_duration >= minTripDuration) {
                         duration_cell.style.background = 'lightgreen';
-                    else
+                        if (!beeped && !soundOff.checked) {
+                            beeped = true;
+                            beep(200, 523, volume);
+                            setTimeout(beep, 400, 200, 587, volume);
+                            setTimeout(beep, 800, 200, 659, volume);
+                            setTimeout(beep, 1200, 200, 523, volume);
+
+                            setTimeout(beep, 1600, 200, 523, volume);
+                            setTimeout(beep, 2000, 200, 587, volume);
+                            setTimeout(beep, 2400, 200, 659, volume);
+                            setTimeout(beep, 2800, 200, 523, volume);
+
+                            setTimeout(beep, 3200, 200, 659, volume);
+                            setTimeout(beep, 3600, 200, 698, volume);
+                            setTimeout(beep, 4000, 400, 784, volume);
+
+                            setTimeout(beep, 4800, 200, 659, volume);
+                            setTimeout(beep, 5200, 200, 698, volume);
+                            setTimeout(beep, 5600, 400, 784, volume);
+
+                            if (soundLong.checked) {
+                                setTimeout(beep, 6400, 100, 784, volume);
+                                setTimeout(beep, 6600, 100, 880, volume);
+                                setTimeout(beep, 6800, 100, 784, volume);
+                                setTimeout(beep, 7000, 100, 698, volume);
+                                setTimeout(beep, 7200, 200, 659, volume);
+                                setTimeout(beep, 7600, 200, 523, volume);
+
+                                setTimeout(beep, 8000, 100, 784, volume);
+                                setTimeout(beep, 8200, 100, 880, volume);
+                                setTimeout(beep, 8400, 100, 784, volume);
+                                setTimeout(beep, 8600, 100, 698, volume);
+                                setTimeout(beep, 8800, 200, 659, volume);
+                                setTimeout(beep, 9200, 200, 523, volume);
+
+                                setTimeout(beep, 9600, 200, 523, volume);
+                                setTimeout(beep, 10000, 200, 392, volume);
+                                setTimeout(beep, 10400, 400, 523, volume);
+
+                                setTimeout(beep, 11200, 200, 523, volume);
+                                setTimeout(beep, 11600, 200, 392, volume);
+                                setTimeout(beep, 12000, 400, 523, volume);
+                            }
+                        }
+                    } else {
                         duration_cell.style.background = 'lightyellow';
+                    }
                     duration.innerHTML = message.trip_duration + "&nbsp;s";
                 } else {
                     duration.innerHTML = "";
                     duration_cell.style.background = '';
+                    beeped = false;
                 }
             }
             ws_rotation.onclose = function(e) {
