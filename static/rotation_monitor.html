@@ -82,6 +82,27 @@
                 myAudioContext.suspend();
             }
         }
+        const toneFrequencies = {
+            'g1': 391.995,
+            'a1': 440,
+            'h1': 493.883,
+            'c2': 523.251,
+            'd2': 587.330,
+            'e2': 659.255,
+            'f2': 698.456,
+            'g2': 783.991,
+            'a2': 880
+        };
+        function playNote(note, divisor, delay, volume, bpm, dutyCycle) {
+            delay = delay || 0;
+            volume = volume || 100;
+            bpm = bpm || 150;
+            dutyCycle = dutyCycle || 0.6;
+            timeInterval = 24e4 / bpm / divisor;
+            if (note != 'p')
+                setTimeout(beep, delay, dutyCycle * timeInterval, toneFrequencies[note], volume);
+            return delay + timeInterval;
+        }
         const opts = {
             angle: 0.15, /// The span of the gauge arc
             lineWidth: 0.44, // The line thickness
@@ -148,6 +169,7 @@
             ws_rotation = new WebSocket("ws://" + window.location.host + "/ws/rotation");
             ws_rotation.onmessage = function(event) {
                 let message = JSON.parse(event.data);
+                var delay = 0;
                 gauge.set(message.rpm);
                 rotations.innerHTML = message.rotations;
                 compass_rotations.innerHTML = message.compass_rotations;
@@ -157,46 +179,46 @@
                         duration_cell.style.background = 'lightgreen';
                         if (!beeped && !soundOff.checked) {
                             beeped = true;
-                            beep(200, 523, volume);
-                            setTimeout(beep, 400, 200, 587, volume);
-                            setTimeout(beep, 800, 200, 659, volume);
-                            setTimeout(beep, 1200, 200, 523, volume);
+                            delay = playNote('c2', 4, delay);
+                            delay = playNote('d2', 4, delay);
+                            delay = playNote('e2', 4, delay);
+                            delay = playNote('c2', 4, delay);
 
-                            setTimeout(beep, 1600, 200, 523, volume);
-                            setTimeout(beep, 2000, 200, 587, volume);
-                            setTimeout(beep, 2400, 200, 659, volume);
-                            setTimeout(beep, 2800, 200, 523, volume);
+                            delay = playNote('c2', 4, delay);
+                            delay = playNote('d2', 4, delay);
+                            delay = playNote('e2', 4, delay);
+                            delay = playNote('c2', 4, delay);
 
-                            setTimeout(beep, 3200, 200, 659, volume);
-                            setTimeout(beep, 3600, 200, 698, volume);
-                            setTimeout(beep, 4000, 400, 784, volume);
+                            delay = playNote('e2', 4, delay);
+                            delay = playNote('f2', 4, delay);
+                            delay = playNote('g2', 2, delay);
 
-                            setTimeout(beep, 4800, 200, 659, volume);
-                            setTimeout(beep, 5200, 200, 698, volume);
-                            setTimeout(beep, 5600, 400, 784, volume);
+                            delay = playNote('e2', 4, delay);
+                            delay = playNote('f2', 4, delay);
+                            delay = playNote('g2', 2, delay);
 
                             if (soundLong.checked) {
-                                setTimeout(beep, 6400, 100, 784, volume);
-                                setTimeout(beep, 6600, 100, 880, volume);
-                                setTimeout(beep, 6800, 100, 784, volume);
-                                setTimeout(beep, 7000, 100, 698, volume);
-                                setTimeout(beep, 7200, 200, 659, volume);
-                                setTimeout(beep, 7600, 200, 523, volume);
+                                delay = playNote('g2', 8 / 1.5, delay);
+                                delay = playNote('a2', 16, delay);
+                                delay = playNote('g2', 8, delay);
+                                delay = playNote('f2', 8, delay);
+                                delay = playNote('e2', 4, delay);
+                                delay = playNote('c2', 4, delay);
 
-                                setTimeout(beep, 8000, 100, 784, volume);
-                                setTimeout(beep, 8200, 100, 880, volume);
-                                setTimeout(beep, 8400, 100, 784, volume);
-                                setTimeout(beep, 8600, 100, 698, volume);
-                                setTimeout(beep, 8800, 200, 659, volume);
-                                setTimeout(beep, 9200, 200, 523, volume);
+                                delay = playNote('g2', 8 / 1.5, delay);
+                                delay = playNote('a2', 16, delay);
+                                delay = playNote('g2', 8, delay);
+                                delay = playNote('f2', 8, delay);
+                                delay = playNote('e2', 4, delay);
+                                delay = playNote('c2', 4, delay);
+                                
+                                delay = playNote('c2', 4, delay);
+                                delay = playNote('g1', 4, delay);
+                                delay = playNote('c2', 2, delay);
 
-                                setTimeout(beep, 9600, 200, 523, volume);
-                                setTimeout(beep, 10000, 200, 392, volume);
-                                setTimeout(beep, 10400, 400, 523, volume);
-
-                                setTimeout(beep, 11200, 200, 523, volume);
-                                setTimeout(beep, 11600, 200, 392, volume);
-                                setTimeout(beep, 12000, 400, 523, volume);
+                                delay = playNote('c2', 4, delay);
+                                delay = playNote('g1', 4, delay);
+                                delay = playNote('c2', 2, delay);
                             }
                         }
                     } else {
