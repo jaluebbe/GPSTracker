@@ -97,7 +97,7 @@
             delay = delay || 0;
             volume = volume || 100;
             bpm = bpm || 150;
-            dutyCycle = dutyCycle || 0.6;
+            dutyCycle = dutyCycle || 0.5;
             timeInterval = 24e4 / bpm / divisor;
             if (note != 'p')
                 setTimeout(beep, delay, dutyCycle * timeInterval, toneFrequencies[note], volume);
