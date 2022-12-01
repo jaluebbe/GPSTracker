@@ -65,6 +65,7 @@
             </td>
         </tr>
     </table>
+    <script src="music.js"></script>
     <script>
         function toggleMinDuration() {
             if (minDurationA.checked) {
@@ -81,27 +82,6 @@
                 console.log('disable sound');
                 myAudioContext.suspend();
             }
-        }
-        const toneFrequencies = {
-            'g1': 391.995,
-            'a1': 440,
-            'h1': 493.883,
-            'c2': 523.251,
-            'd2': 587.330,
-            'e2': 659.255,
-            'f2': 698.456,
-            'g2': 783.991,
-            'a2': 880
-        };
-        function playNote(note, divisor, delay, volume, bpm, dutyCycle) {
-            delay = delay || 0;
-            volume = volume || 100;
-            bpm = bpm || 150;
-            dutyCycle = dutyCycle || 0.5;
-            timeInterval = 24e4 / bpm / divisor;
-            if (note != 'p')
-                setTimeout(beep, delay, dutyCycle * timeInterval, toneFrequencies[note], volume);
-            return delay + timeInterval;
         }
         const opts = {
             angle: 0.15, /// The span of the gauge arc
@@ -165,71 +145,46 @@
         var ws = undefined;
         var beeped = false;
 
+        function processMessage(message) {
+            var delay = 0;
+            gauge.set(message.rpm);
+            rotations.innerHTML = message.rotations;
+            compass_rotations.innerHTML = message.compass_rotations;
+            trips.innerHTML = message.trips;
+            if (message.on_trip) {
+                if (message.trip_duration >= minTripDuration) {
+                    duration_cell.style.background = 'lightgreen';
+                    if (!beeped && !soundOff.checked) {
+                        beeped = true;
+                        let mySong = songs[message.trips % songs.length];
+                        if (soundLong.checked) {
+                            mySong.long.forEach(n=>{
+                                delay = playNote(n[0], n[1], delay, volume, mySong.bpm);
+                                console.log(mySong.bpm);
+                            });
+                        } else {
+                            mySong.short.forEach(n=>{
+                                delay = playNote(n[0], n[1], delay, volume, mySong.bpm);
+                                console.log(mySong.bpm);
+                            });
+                        }
+                    }
+                } else {
+                    duration_cell.style.background = 'lightyellow';
+                }
+                duration.innerHTML = message.trip_duration + "&nbsp;s";
+            } else {
+                duration.innerHTML = "";
+                duration_cell.style.background = '';
+                beeped = false;
+            }
+        }
+
         function connect() {
             ws_rotation = new WebSocket("ws://" + window.location.host + "/ws/rotation");
             ws_rotation.onmessage = function(event) {
                 let message = JSON.parse(event.data);
-                var delay = 0;
-                gauge.set(message.rpm);
-                rotations.innerHTML = message.rotations;
-                compass_rotations.innerHTML = message.compass_rotations;
-                trips.innerHTML = message.trips;
-                if (message.on_trip) {
-                    if (message.trip_duration >= minTripDuration) {
-                        duration_cell.style.background = 'lightgreen';
-                        if (!beeped && !soundOff.checked) {
-                            beeped = true;
-                            delay = playNote('c2', 4, delay);
-                            delay = playNote('d2', 4, delay);
-                            delay = playNote('e2', 4, delay);
-                            delay = playNote('c2', 4, delay);
-
-                            delay = playNote('c2', 4, delay);
-                            delay = playNote('d2', 4, delay);
-                            delay = playNote('e2', 4, delay);
-                            delay = playNote('c2', 4, delay);
-
-                            delay = playNote('e2', 4, delay);
-                            delay = playNote('f2', 4, delay);
-                            delay = playNote('g2', 2, delay);
-
-                            delay = playNote('e2', 4, delay);
-                            delay = playNote('f2', 4, delay);
-                            delay = playNote('g2', 2, delay);
-
-                            if (soundLong.checked) {
-                                delay = playNote('g2', 8 / 1.5, delay);
-                                delay = playNote('a2', 16, delay);
-                                delay = playNote('g2', 8, delay);
-                                delay = playNote('f2', 8, delay);
-                                delay = playNote('e2', 4, delay);
-                                delay = playNote('c2', 4, delay);
-
-                                delay = playNote('g2', 8 / 1.5, delay);
-                                delay = playNote('a2', 16, delay);
-                                delay = playNote('g2', 8, delay);
-                                delay = playNote('f2', 8, delay);
-                                delay = playNote('e2', 4, delay);
-                                delay = playNote('c2', 4, delay);
-                                
-                                delay = playNote('c2', 4, delay);
-                                delay = playNote('g1', 4, delay);
-                                delay = playNote('c2', 2, delay);
-
-                                delay = playNote('c2', 4, delay);
-                                delay = playNote('g1', 4, delay);
-                                delay = playNote('c2', 2, delay);
-                            }
-                        }
-                    } else {
-                        duration_cell.style.background = 'lightyellow';
-                    }
-                    duration.innerHTML = message.trip_duration + "&nbsp;s";
-                } else {
-                    duration.innerHTML = "";
-                    duration_cell.style.background = '';
-                    beeped = false;
-                }
+                processMessage(message);
             }
             ws_rotation.onclose = function(e) {
                 console.log('Socket is closed. Reconnect will be attempted in 5 seconds.', e.reason);
