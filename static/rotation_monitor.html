@@ -64,7 +64,12 @@
                 <label for="soundLong">long</label><br>
             </td>
         </tr>
+        <tr>
+            <td><button onclick="gyrCalibration();">gyro calibration</button></td>
+            <td><span id="gyrCalibrationResult"></span></td>
+        </tr>
     </table>
+    <script src="spin.js/spin.min.js"></script>
     <script src="music.js"></script>
     <script>
         function toggleMinDuration() {
@@ -83,7 +88,7 @@
                 myAudioContext.suspend();
             }
         }
-        const opts = {
+        const gaugeOpts = {
             angle: 0.15, /// The span of the gauge arc
             lineWidth: 0.44, // The line thickness
             pointer: {
@@ -136,14 +141,16 @@
                 } // Red
             ]
         };
-        const target = document.getElementById('canvas-preview');
-        const gauge = new Gauge(target).setOptions(opts);
+        const canvasTarget = document.getElementById('canvas-preview');
+        const gauge = new Gauge(canvasTarget).setOptions(gaugeOpts);
         const volume = 100;
         var minTripDuration = 16;
         gauge.maxValue = 10; // set max gauge value
         gauge.setMinValue(-1); // set min value
         var ws = undefined;
         var beeped = false;
+        const spinTarget = document.getElementById('gyrCalibrationResult');
+        var spinner = undefined;
 
         function processMessage(message) {
             var delay = 0;
@@ -160,12 +167,10 @@
                         if (soundLong.checked) {
                             mySong.long.forEach(n=>{
                                 delay = playNote(n[0], n[1], delay, volume, mySong.bpm);
-                                console.log(mySong.bpm);
                             });
                         } else {
                             mySong.short.forEach(n=>{
                                 delay = playNote(n[0], n[1], delay, volume, mySong.bpm);
-                                console.log(mySong.bpm);
                             });
                         }
                     }
@@ -192,6 +197,21 @@
                     connect();
                 }, 5000);
             }
+        }
+
+        function gyrCalibration() {
+            spinner = new Spinner().spin(spinTarget);
+            var xhr = new XMLHttpRequest();
+            xhr.open('GET', '../api/calibrate_gyro');
+            xhr.setRequestHeader('Content-Type', 'application/json');
+            xhr.onload = function() {
+                if (xhr.status === 200) {
+                    let result = JSON.parse(xhr.responseText);
+                    gyrCalibrationResult.innerHTML = result[2];
+                }
+                spinner.stop();
+            }
+            xhr.send();
         }
         connect();
         toggleMinDuration();
