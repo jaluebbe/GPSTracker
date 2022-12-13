@@ -71,7 +71,9 @@
     </table>
     <script src="spin.js/spin.min.js"></script>
     <script src="music.js"></script>
+    <script src="no_sleep.min.js"></script>
     <script>
+        var noSleep = new NoSleep();
         function toggleMinDuration() {
             if (minDurationA.checked) {
                 minTripDuration = parseFloat(minDurationInputA.value);
@@ -83,9 +85,11 @@
             if (!soundOff.checked) {
                 console.log('enable sound');
                 myAudioContext.resume();
+                noSleep.enable();
             } else {
                 console.log('disable sound');
                 myAudioContext.suspend();
+                noSleep.disable();
             }
         }
         const gaugeOpts = {
