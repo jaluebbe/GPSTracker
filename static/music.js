@@ -97,7 +97,7 @@ const songs = [{
     ]
 }, {
     title: 'Frere Jacques',
-    bpm: 140,
+    bpm: 120,
     short: [
         ['g1', 4],
         ['a1', 4],
@@ -152,7 +152,7 @@ const songs = [{
     ]
 }, {
     title: 'Alle Jahre wieder',
-    bpm: 140,
+    bpm: 120,
     short: [
         ['g1', 4 / 1.5],
         ['a1', 8],
