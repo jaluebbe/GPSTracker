@@ -109,3 +109,6 @@ logs_json/
 # calibration files
 lsm_calibration.json
 new_calibration.json
+
+# offline map data
+*.mbtiles
