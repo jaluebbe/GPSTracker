@@ -17,13 +17,9 @@
     <script src="leaflet/leaflet.js"></script>
     <script src="maplibre-gl/maplibre-gl.js"></script>
     <script src="maplibre-gl/leaflet-maplibre-gl.js"></script>
-    <script src="leaflet/esri-leaflet.js"></script>
-    <script src="leaflet/esri-leaflet-vector.js"></script>
-    <script src="esri_access_token.js"></script>
-    <script src="gps_visualisation_base.js"></script>
+    <script src="gps_visualisation_offline.js"></script>
     <script>
         map.setZoom(15);
-        map.removeEventListener('baselayerchange');
         var myMarker = L.marker([], {
             zIndexOffset: 1000
         });

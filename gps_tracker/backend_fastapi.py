@@ -1,4 +1,12 @@
-from fastapi import FastAPI, HTTPException, Query, WebSocket, status
+from fastapi import (
+    FastAPI,
+    HTTPException,
+    Query,
+    WebSocket,
+    status,
+    Request,
+    Response,
+)
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import RedirectResponse
 from typing import List
@@ -9,6 +17,7 @@ import json
 import os
 import asyncio
 import logging
+import sqlite3
 import numpy as np
 from pathlib import Path
 from ellipsoid_fit import ellipsoid_fit, data_regularize
@@ -24,6 +33,7 @@ redis_connection = aioredis.Redis(host=redis_host, decode_responses=True)
 
 app = FastAPI()
 app.mount("/static", StaticFiles(directory="../static"), name="static")
+app.mount("/fonts", StaticFiles(directory="../fonts"), name="fonts")
 log_directory = Path("../logs_json")
 if not log_directory.is_dir():
     log_directory.mkdir()
@@ -249,3 +259,73 @@ async def calibrate_magnetometer(data: List):
     for _key, _value in calibration.items():
         await redis_connection.set(_key, json.dumps(_value))
     return calibration
+
+
+@app.get("/api/vector/metadata/{region}.json")
+def get_vector_metadata(region: str, request: Request):
+    db_file_name = f"{region}.mbtiles"
+    if not os.path.isfile(db_file_name):
+        raise HTTPException(
+            status_code=404, detail=f"Region '{region}' not found."
+        )
+    db_connection = sqlite3.connect(f"file:{db_file_name}?mode=ro", uri=True)
+    cursor = db_connection.execute("SELECT * FROM metadata")
+    result = cursor.fetchall()
+    cursor.close()
+    db_connection.close()
+    if result is None:
+        raise HTTPException(status_code=404, detail="Metadata not found.")
+    if request.url.port is None:
+        # workaround for operation behind reverse proxy
+        port_suffix = ""
+        scheme = "https"
+    else:
+        port_suffix = f":{request.url.port}"
+        scheme = request.url.scheme
+    metadata = {
+        "tilejson": "2.0.0",
+        "scheme": "xyz",
+        "tiles": [
+            f"{scheme}://{request.url.hostname}{port_suffix}"
+            f"/api/vector/tiles/{region}/{{z}}/{{x}}/{{y}}.pbf"
+        ],
+    }
+    for key, value in result:
+        if key == "json":
+            metadata.update(json.loads(value))
+        elif key in ("minzoom", "maxzoom"):
+            metadata[key] = int(value)
+        elif key == "center":
+            continue
+        elif key == "bounds":
+            metadata[key] = [float(_value) for _value in value.split(",")]
+        else:
+            metadata[key] = value
+    return metadata
+
+
+@app.get("/api/vector/tiles/{region}/{zoom_level}/{x}/{y}.pbf")
+def get_vector_tiles(region: str, zoom_level: int, x: int, y: int):
+    tile_column = x
+    tile_row = 2**zoom_level - 1 - y
+    db_file_name = f"{region}.mbtiles"
+    if not os.path.isfile(db_file_name):
+        raise HTTPException(
+            status_code=404, detail=f"Region '{region}' not found."
+        )
+    db_connection = sqlite3.connect(f"file:{db_file_name}?mode=ro", uri=True)
+    cursor = db_connection.execute(
+        "SELECT tile_data FROM tiles "
+        "WHERE zoom_level = ? and tile_column = ? and tile_row = ?",
+        (zoom_level, tile_column, tile_row),
+    )
+    result = cursor.fetchone()
+    cursor.close()
+    db_connection.close()
+    if result is None:
+        raise HTTPException(status_code=404, detail="Tile not found.")
+    return Response(
+        content=result[0],
+        media_type="application/octet-stream",
+        headers={"Content-Encoding": "gzip"},
+    )

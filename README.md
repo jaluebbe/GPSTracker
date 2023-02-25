@@ -73,6 +73,25 @@ chmod +x /home/pi/GPSTracker/gps_tracker/imu_baro_poller.py
 sudo systemctl enable imu_baro_poller.service
 ```
 
+Install fonts required for vector tiles:
+```
+git clone https://github.com/klokantech/klokantech-gl-fonts static/fonts
+```
+
+Prepare OpenStreetMap offline data:
+```
+docker run -e JAVA_TOOL_OPTIONS="-Xmx10g" -v "$(pwd)/data":/data ghcr.io/onthegomap/planetiler:latest --download --area=europe
+```
+Do not try this on a Raspberry Pi. It may take more than a day to create
+the output.mbtiles even on a powerful machine. You may choose another or a
+smaller region.
+For more information see the
+[planetiler documentation](https://github.com/onthegomap/planetiler).
+Finally, copy the output.mbtiles to your Raspberry Pi and create a link to
+its location in the gps_tracker directory:
+```
+ln -s output.mbtiles gps_tracker/osm_offline.mbtiles
+```
 
 #### Data transfer to web page (optional)
 ```
