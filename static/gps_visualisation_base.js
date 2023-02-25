@@ -1,5 +1,5 @@
 var map = L.map('map', {
-    minZoom: 7,
+    minZoom: 5,
     maxZoom: 19
 });
 map.setView([49.0, 9.0], 7);
