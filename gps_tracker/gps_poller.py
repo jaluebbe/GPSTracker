@@ -40,7 +40,10 @@ async def consume_gpsd():
                     await redis_connection.publish("gps", json.dumps(data))
                 if devices is not None and old_utc is not None:
                     _driver = devices[0]["driver"]
-                    if _driver == "u-blox" and data["utc"] - old_utc > 0.16:
+                    _path = devices[0]["path"]
+                    if _path != "/dev/serial0":
+                        pass
+                    elif _driver == "u-blox" and data["utc"] - old_utc > 0.16:
                         # set the data rate of the GPS to 10Hz
                         subprocess.check_output(
                             ["gpsctl", "-c", "0.1", "-s", "115200"], timeout=8
