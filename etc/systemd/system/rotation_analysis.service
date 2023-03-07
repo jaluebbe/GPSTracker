@@ -4,9 +4,9 @@ After=redis-server.service
 
 [Service]
 Type=simple
-User=pi
+User=gpstracker
 Restart=on-failure
-ExecStart=/home/pi/GPSTracker/gps_tracker/rotation_analysis.py
+ExecStart=/home/gpstracker/GPSTracker/gps_tracker/rotation_analysis.py
 
 [Install]
 WantedBy=multi-user.target
