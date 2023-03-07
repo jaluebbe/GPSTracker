@@ -4,9 +4,9 @@ After=redis-server.service
 
 [Service]
 Type=simple
-User=pi
+User=gpstracker
 Restart=on-failure
-ExecStart=/home/pi/GPSTracker/gps_tracker/gps_baro_merge.py
+ExecStart=/home/gpstracker/GPSTracker/gps_tracker/gps_baro_merge.py
 
 [Install]
 WantedBy=multi-user.target

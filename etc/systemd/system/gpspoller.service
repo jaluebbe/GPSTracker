@@ -1,12 +1,12 @@
 [Unit]
-Description=Rotation analysis
+Description=GPSD poller
 After=redis-server.service
 
 [Service]
 Type=simple
 User=gpstracker
 Restart=on-failure
-ExecStart=/home/gpstracker/GPSTracker/gps_tracker/rotation_analysis.py
+ExecStart=/home/gpstracker/GPSTracker/gps_tracker/gps_poller.py
 
 [Install]
 WantedBy=multi-user.target
