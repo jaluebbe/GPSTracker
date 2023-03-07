@@ -5,7 +5,7 @@ import json
 import socket
 import redis
 import numpy as np
-from ahrs.filters import Complementary
+from ahrs.filters import Tilt, Madgwick
 from ahrs import Quaternion, RAD2DEG, DEG2RAD
 
 
@@ -21,7 +21,7 @@ class Lsm:
         self.raw_gyro = None
         self.old_q = None
         self.old_timestamp = None
-        self.complementary = Complementary()
+        self.madgwick = Madgwick()
         self.calibration = {
             "g": 9.80665,
             "g_offset": [0.0, 0.0, 0.0],
@@ -79,14 +79,17 @@ class Lsm:
         rotated = np.array(self.calibration["rotation"]).dot(corrected)
         return rotated * scaling
 
-    def get_sensor_data(self, gain=0.02):
+    def get_sensor_data(
+        self, sensor_fusion: bool = True, use_mag: bool = False
+    ) -> dict:
         """
         Collects and returns sensor data. May perform sensor fusion and
-        add the combined sensor data to the output. Sensor fusion is disabled
-        if the gain is None.
+        add the combined sensor data to the output. The consideration of
+        magnetometer data for sensor fusion is optional.
 
-        :param float gain: complementary filter gain (defaults to 0.02)
-        :return: sensor data
+        :param bool sensor_fusion: perform sensor fusion defaults True
+        :param bool use_mag: use magnetometer for sensor fusion defaults False
+        :return: sensor data as dict
         """
         timestamp = time.time()
         sensor_data = {
@@ -108,22 +111,23 @@ class Lsm:
             sensor_data["raw_gyro"] = self.raw_gyro
             sensor_data["gyro"] = np.round(gyr, 3).tolist()
 
-        if self.ACC_ADDRESS is not None and gain is not None:
-            q_am = self.complementary.am_estimation(acc, magnetometer)
+        if self.ACC_ADDRESS is not None and sensor_fusion:
             if self.old_timestamp is not None and self.GYR_ADDRESS is not None:
                 dt = timestamp - self.old_timestamp
-                self.complementary.Dt = dt
-                q_omega = self.complementary.attitude_propagation(
-                    self.old_q, gyr
-                )
-                # Complementary Estimation
-                if np.linalg.norm(q_omega + q_am) < np.sqrt(2):
-                    q_est = (1.0 - gain) * q_omega - gain * q_am
+                if use_mag and magnetometer is not None:
+                    q = self.madgwick.updateMARG(
+                        self.old_q, gyr=gyr, acc=acc, mag=magnetometer, dt=dt
+                    )
                 else:
-                    q_est = (1.0 - gain) * q_omega + gain * q_am
-                q = q_est / np.linalg.norm(q_est)
+                    q = self.madgwick.updateIMU(
+                        self.old_q, gyr=gyr, acc=acc, dt=dt
+                    )
             else:
-                q = q_am
+                if use_mag and magnetometer is not None:
+                    q = Tilt(acc=acc, mag=magnetometer).Q
+                else:
+                    q = Tilt(acc=acc).Q
+
             roll, pitch, yaw = Quaternion(q).to_angles()
             vertical_acceleration = np.sum(
                 np.array(

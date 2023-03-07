@@ -31,7 +31,7 @@ if __name__ == "__main__":
         exit()
     while True:
         t_start = time.time()
-        sensor_data = sensor.get_sensor_data(gain=None)
+        sensor_data = sensor.get_sensor_data(sensor_fusion=False)
         redis_connection.publish("imu", json.dumps(sensor_data))
         dt = time.time() - t_start
         time.sleep(max(0, interval - dt))
