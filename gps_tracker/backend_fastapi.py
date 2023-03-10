@@ -33,7 +33,8 @@ redis_connection = aioredis.Redis(host=redis_host, decode_responses=True)
 
 app = FastAPI()
 app.mount("/static", StaticFiles(directory="../static"), name="static")
-app.mount("/fonts", StaticFiles(directory="../fonts"), name="fonts")
+if Path("../fonts").is_dir():
+    app.mount("/fonts", StaticFiles(directory="../fonts"), name="fonts")
 log_directory = Path("../logs_json")
 if not log_directory.is_dir():
     log_directory.mkdir()
