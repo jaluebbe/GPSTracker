@@ -13,6 +13,7 @@ async def consume_gpsd():
     redis_connection = aioredis.Redis()
     async with gps.aiogps.aiogps() as gpsd:
         sky_info = {}
+        config_counter = 0
         devices = None
         old_utc = None
         async for msg in gpsd:
@@ -41,18 +42,22 @@ async def consume_gpsd():
                 if devices is not None and old_utc is not None:
                     _driver = devices[0]["driver"]
                     _path = devices[0]["path"]
-                    if _path != "/dev/serial0":
+                    if config_counter > 5:
+                        pass
+                    elif _path != "/dev/serial0":
                         pass
                     elif _driver == "u-blox" and data["utc"] - old_utc > 0.16:
                         # set the data rate of the GPS to 10Hz
                         subprocess.check_output(
                             ["gpsctl", "-c", "0.1", "-s", "115200"], timeout=8
                         )
+                        config_counter = config_counter + 1
                     elif _driver == "MTK-3301" and data["utc"] - old_utc > 0.7:
                         # set the data rate of the GPS to 2Hz
                         subprocess.check_output(
                             ["gpsctl", "-c", "0.5"], timeout=8
                         )
+                        config_counter = config_counter + 1
                 old_utc = data["utc"]
             elif msg["class"] == "DEVICES":
                 devices = msg["devices"]
