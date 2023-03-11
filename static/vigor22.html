@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <link rel="shortcut icon" type="image/x-icon" href="favicon.ico">
+    <title>Vigor 22 GPS location</title>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <link rel="stylesheet" href="leaflet/leaflet.css">
+    <link rel="stylesheet" href="maplibre-gl/maplibre-gl.css">
+    <link rel="stylesheet" href="gps_visualisation.css">
+</head>
+
+<body>
+    <div id="map"></div>
+    <template id="dataTransferInputTemplate">
+        <form name="dataTransferInputForm" onsubmit="return false;">
+            <div class="grid-container">
+                <h4>Data Transfer</h4>
+                <input type="file" id="fileInput" accept="application/json">
+                <div class="three-columns">
+                    <div style="margin: auto;">Project</div>
+                    <button onclick="importProject();" id="importProjectButton" name="importProjectButton">import</button>
+                    <button onclick="exportProject();" id="exportProjectButton" name="exportProjectButton">export</button>
+                </div>
+                <h4>GPS</h4>
+                <button onclick="disconnectGPS()">disconnect</button>
+                <button onclick="resetGPSConnection()">reset connection</button>
+            </div>
+        </form>
+    </template>
+    <script src="leaflet/leaflet.js"></script>
+    <script src="turf.min.js"></script>
+    <script src="maplibre-gl/maplibre-gl.js"></script>
+    <script src="maplibre-gl/leaflet-maplibre-gl.js"></script>
+    <script src="no_sleep.min.js"></script>
+    <script src="gps_visualisation_offline.js"></script>
+    <script src="vigor22_gps.js"></script>
+    <script>
+        var ws = undefined;
+        function connectGPS() {
+            ws = new WebSocket("ws://" + window.location.host + "/ws/gps");
+            ws.onmessage = function(event) {
+                let message = JSON.parse(event.data);
+                let location = L.latLng(message.lat, message.lon);
+                let error = message.hdop * 15;
+                let e = {
+                    latlng: location,
+                    latitude: message.lat,
+                    longitude: message.lon,
+                    speed: message.speed,
+                    heading: message.track,
+                    accuracy: error
+                }
+                onLocationFound(e);
+            };
+        };
+        function disconnectGPS() {
+            ws.close(1000);
+            ws.onmessage = null;
+        };
+        function resetGPSConnection() {
+            disconnectGPS();
+            connectGPS();
+        };
+        connectGPS();
+    </script>
+    
+</body>
+
+</html>
