@@ -14,6 +14,13 @@
 
 <body>
     <div id="map"></div>
+    <template id="gpsControlTemplate">
+        <div class="grid-container">
+            <h4>GPS</h4>
+            <button onclick="disconnectGPS()">disconnect</button>
+            <button onclick="resetGPSConnection()">reset connection</button>
+        </div>
+    </template>
     <script src="leaflet/leaflet.js"></script>
     <script src="maplibre-gl/maplibre-gl.js"></script>
     <script src="maplibre-gl/leaflet-maplibre-gl.js"></script>
@@ -26,22 +33,45 @@
         var myCircle = L.circle([], {
             radius: 0
         });
-        var ws = new WebSocket("ws://" + window.location.host + "/ws/gps");
-        ws.onmessage = function(event) {
-            let message = JSON.parse(event.data);
-            let location = L.latLng(message.lat, message.lon);
-            let error = message.hdop * 15;
-            myMarker.setLatLng(location);
-            myCircle.setLatLng(location);
-            myCircle.setRadius(error);
-            if (!map.hasLayer(myMarker)) {
-                myMarker.addTo(map);
-                myCircle.addTo(map);
-            }
-            if (!map.getBounds().contains(location)) {
-                map.setView(location);
-            }
+        var legend = L.control({
+            position: 'topright'
+        });
+        legend.onAdd = function(map) {
+            this._div = L.DomUtil.create('div', 'info legend');
+            let tempSource = document.getElementById('gpsControlTemplate');
+            this._div.appendChild(tempSource.content.cloneNode(true));
+            L.DomEvent.disableClickPropagation(this._div);
+            return this._div;
         }
+        legend.addTo(map);
+        var ws = undefined;
+        function connectGPS() {
+            ws = new WebSocket("ws://" + window.location.host + "/ws/gps");
+            ws.onmessage = function(event) {
+                let message = JSON.parse(event.data);
+                let location = L.latLng(message.lat, message.lon);
+                let error = message.hdop * 15;
+                myMarker.setLatLng(location);
+                myCircle.setLatLng(location);
+                myCircle.setRadius(error);
+                if (!map.hasLayer(myMarker)) {
+                    myMarker.addTo(map);
+                    myCircle.addTo(map);
+                }
+                if (!map.getBounds().contains(location)) {
+                    map.setView(location);
+                }
+            };
+        };
+        function disconnectGPS() {
+            ws.close(1000);
+            ws.onmessage = null;
+        };
+        function resetGPSConnection() {
+            disconnectGPS();
+            connectGPS();
+        };
+        connectGPS();
     </script>
 </body>
 
