@@ -24,3 +24,9 @@ body {
     margin: 0 0 5px;
     color: #777;
 }
+
+.grid-container {
+    display: grid;
+    column-gap: 5px;
+    row-gap: 5px;
+}
