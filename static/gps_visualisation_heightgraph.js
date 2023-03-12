@@ -18,7 +18,8 @@ legend.onAdd = function(map) {
         '<div><input type="radio" id="showPressureAltitude" name="selectSource" checked><label for="showPressureAltitude">pressure altitude</label></div>'+
         '<div><label for="refPressureInput">p<sub>ref</sub> (mbar)</label>' +
         '<input type="number" id="refPressureInput" min="950" max="1050" value="1013.2" step="0.1"></div>' +
-        '<div><button onclick="loadTrackingData();">load data</button></div></div>';
+        '<div><button onclick="loadTrackingData();">load data</button></div>' +
+        '<div><button onclick="exportTrackingData();">export as JSON</button></div></div>';
     L.DomEvent.disableClickPropagation(this._div);
     return this._div;
 };
@@ -71,5 +72,30 @@ function loadGeoJSON(fileName) {
 }
 function loadTrackingData() {
     loadGeoJSON(document.getElementById("trackSelect").value);
+}
+function exportTrackingData() {
+    let url = document.getElementById("trackSelect").value.replace(".geojson", ".json");
+    let exportFileName = url.match(".*/(tracking.*.json)?.*$")[1];
+    var xhr = new XMLHttpRequest();
+    xhr.open('GET', url);
+    xhr.setRequestHeader('Content-Type', 'application/json');
+    xhr.onload = function() {
+        map.spin(false);
+        if (xhr.status === 200) {
+            var geojson = JSON.parse(xhr.responseText);
+            let pom = document.createElement('a');
+            pom.setAttribute('href', 'data:application/json;charset=utf-8,' + encodeURIComponent(xhr.responseText));
+            pom.setAttribute('download', exportFileName);
+            if (document.createEvent) {
+                let event = document.createEvent('MouseEvents');
+                event.initEvent('click', true, true);
+                pom.dispatchEvent(event);
+            } else {
+                pom.click();
+            }
+        }
+    };
+    map.spin(true);
+    xhr.send();
 }
 window.addEventListener('resize', adjustHeightgraphWidth);
