@@ -112,3 +112,6 @@ new_calibration.json
 
 # offline map data
 *.mbtiles
+
+# downloaded fonts
+fonts/
