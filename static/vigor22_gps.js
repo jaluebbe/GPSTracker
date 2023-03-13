@@ -297,7 +297,9 @@ function onLocationFound(e) {
     console.log(e);
     myMarker.setLatLng(e.latlng);
     myCircle.setLatLng(e.latlng);
-    myCircle.setRadius(e.accuracy);
+    if (isFinite(e.accuracy)) {
+        myCircle.setRadius(e.accuracy);
+    }
     if (!map.hasLayer(myMarker)) {
         myMarker.addTo(map);
         myCircle.addTo(map);
