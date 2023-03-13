@@ -53,7 +53,8 @@
                 let error = message.hdop * 15;
                 myMarker.setLatLng(location);
                 myCircle.setLatLng(location);
-                myCircle.setRadius(error);
+                if (isFinite(error))
+                    myCircle.setRadius(error);
                 if (!map.hasLayer(myMarker)) {
                     myMarker.addTo(map);
                     myCircle.addTo(map);
