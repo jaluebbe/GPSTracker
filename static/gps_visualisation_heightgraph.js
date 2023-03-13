@@ -75,7 +75,11 @@ function loadTrackingData() {
 }
 function exportTrackingData() {
     let url = document.getElementById("trackSelect").value.replace(".geojson", ".json");
-    let exportFileName = url.match(".*/(tracking.*.json)?.*$")[1];
+    let match = url.match(".*/(tracking.*.json)?.*$");
+    if (match == null) {
+        return;
+    }
+    let exportFileName = match[1];
     var xhr = new XMLHttpRequest();
     xhr.open('GET', url);
     xhr.setRequestHeader('Content-Type', 'application/json');
