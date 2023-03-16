@@ -5,12 +5,15 @@ var legend = L.control({
 legend.onAdd = function(map) {
     this._div = L.DomUtil.create('div', 'info legend');
     this._div.innerHTML =
-        '<div style="display: grid; grid-gap: 2px"><div>Choose data</div><div><select id="trackSelect">' +
+        '<div style="display: grid; grid-gap: 2px">' +
+        '<div>Choose data</div><div><select id="trackSelect">' +
         '<optgroup label="Redis DB" id="redisOptions"></optgroup>' +
         '<optgroup label="Archive" id="archiveOptions"></optgroup>' +
         '</select></div>' +
-        '<div><input type="radio" id="showGpsAltitude" name="selectSource"><label for="showGpsAltitude">GPS altitude</label></div>' +
-        '<div><input type="radio" id="showPressureAltitude" name="selectSource" checked><label for="showPressureAltitude">pressure altitude</label></div>'+
+        '<div><input type="radio" id="showGpsAltitude" name="selectSource">' +
+        '<label for="showGpsAltitude">GPS altitude</label></div>' +
+        '<div><input type="radio" id="showPressureAltitude" name="selectSource" checked>' +
+        '<label for="showPressureAltitude">pressure altitude</label></div>'+
         '<div><label for="refPressureInput">p<sub>ref</sub> (mbar)</label>' +
         '<input type="number" id="refPressureInput" min="950" max="1050" value="1013.2" step="0.1"></div>' +
         '<div><button onclick="loadTrackingData();">load data</button></div>' +

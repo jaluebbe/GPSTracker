@@ -5,11 +5,13 @@ var legend = L.control({
 legend.onAdd = function(map) {
     this._div = L.DomUtil.create('div', 'info legend');
     this._div.innerHTML =
-        '<div style="display: grid; grid-gap: 2px"><div>Choose data</div><div><select id="trackSelect">' +
+        '<div style="display: grid; grid-gap: 2px">' +
+        '<div>Choose data</div><div><select id="trackSelect">' +
         '<optgroup label="Redis DB" id="redisOptions"></optgroup>' +
         '<optgroup label="Archive" id="archiveOptions"></optgroup>' +
         '</select></div>' +
-        '<div><button onclick="loadTrackingData();">load data</button></div></div>';
+        '<div><button onclick="loadTrackingData();">load data</button></div>' +
+        '<div><button onclick="exportTrackingData();">export as JSON</button></div></div>';
     L.DomEvent.disableClickPropagation(this._div);
     return this._div;
 };
@@ -87,4 +89,34 @@ function loadJSON(fileName) {
 
 function loadTrackingData() {
     loadJSON(document.getElementById("trackSelect").value);
+}
+
+function exportTrackingData() {
+    let url = document.getElementById("trackSelect").value;
+    let match = url.match(".*/(tracking.*.json)?.*$");
+    if (match == null) {
+        return;
+    }
+    let exportFileName = match[1];
+    var xhr = new XMLHttpRequest();
+    xhr.open('GET', url);
+    xhr.setRequestHeader('Content-Type', 'application/json');
+    xhr.onload = function() {
+        map.spin(false);
+        if (xhr.status === 200) {
+            var geojson = JSON.parse(xhr.responseText);
+            let pom = document.createElement('a');
+            pom.setAttribute('href', 'data:application/json;charset=utf-8,' + encodeURIComponent(xhr.responseText));
+            pom.setAttribute('download', exportFileName);
+            if (document.createEvent) {
+                let event = document.createEvent('MouseEvents');
+                event.initEvent('click', true, true);
+                pom.dispatchEvent(event);
+            } else {
+                pom.click();
+            }
+        }
+    };
+    map.spin(true);
+    xhr.send();
 }
