@@ -17,11 +17,10 @@ if [ "$_IP" ]; then
   printf "My IP address is %s\n" "$_IP"
 fi
 
-# Disable HDMI	25mA	If you're running a headless Raspberry Pi, there's
-# no need to power the display circuitry, and you can save a little power
-# by running /usr/bin/tvservice -o (-p to re-enable).
-# Add the line to /etc/rc.local to disable HDMI on boot.
-#/usr/bin/tvservice -o
+# You could save a lot of power by disabling HDMI in a headless setup.
+# This requires to select the legacy graphics driver in raspi-config .
+# "Advanced Options" -> "GL Driver" -> "Legacy"
+/usr/bin/tvservice -o
 
 # After a reboot, the Raspberry Pi does not have the correct system time
 # until the current time is aquired either via NTP or via GPS. This message
