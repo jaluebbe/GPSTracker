@@ -8,12 +8,6 @@ legend.onAdd = function(map) {
         '<table><tr><td>Choose data</td></tr><tr><td><select id="trackSelect">' +
         '<optgroup label="Redis DB" id="redisOptions"></optgroup>' +
         '<optgroup label="Archive" id="archiveOptions"></optgroup>' +
-        '<optgroup label="Demo datasets" id="demoOptions">' +
-        '<option selected value="artificial_tracking_data.json?">artificial data</option>' +
-        '<option value="real_tracking_data.json?">real data</option>' +
-        '<option value="airbus_tree.json?">Airbus tree</option>' +
-        '<option value="airports_static.json?">airports</option>' +
-        '</optgroup>' +
         '</select></td></tr>' +
         '</table>';
         L.DomEvent.disableClickPropagation(this._div);

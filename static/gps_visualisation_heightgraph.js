@@ -8,11 +8,6 @@ legend.onAdd = function(map) {
         '<div style="display: grid; grid-gap: 2px"><div>Choose data</div><div><select id="trackSelect">' +
         '<optgroup label="Redis DB" id="redisOptions"></optgroup>' +
         '<optgroup label="Archive" id="archiveOptions"></optgroup>' +
-        '<optgroup label="Demo datasets" id="demoOptions">' +
-        '<option selected value="artificial_tracking_data.json?">artificial data</option>' +
-        '<option value="real_tracking_data.json?">real data</option>' +
-        '<option value="airbus_tree.json?">Airbus tree</option>' +
-        '</optgroup>' +
         '</select></div>' +
         '<div><input type="radio" id="showGpsAltitude" name="selectSource"><label for="showGpsAltitude">GPS altitude</label></div>' +
         '<div><input type="radio" id="showPressureAltitude" name="selectSource" checked><label for="showPressureAltitude">pressure altitude</label></div>'+
