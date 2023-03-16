@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+import signal
+import sys
 import asyncio
 import socket
 import json
@@ -6,6 +8,15 @@ import datetime as dt
 import gps.aiogps
 import aioredis
 import subprocess
+
+
+def sigterm_handler(signal, frame):
+    # setting the baud rate of the GPS back to standard before rebooting.
+    subprocess.check_output(["gpsctl", "-s", "9600"], timeout=8)
+    sys.exit(0)
+
+
+signal.signal(signal.SIGTERM, sigterm_handler)
 
 
 async def consume_gpsd():
