@@ -6,7 +6,7 @@ After=redis-server.service
 Type=simple
 User=pi
 Restart=on-failure
-ExecStart=/home/pi/GPSTracker/gps_tracker/transfer_data.py
+ExecStart=/home/gpstracker/GPSTracker/gps_tracker/transfer_data.py
 
 [Install]
 WantedBy=multi-user.target
