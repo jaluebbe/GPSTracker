@@ -108,11 +108,3 @@ sudo systemctl enable gps_tracker_api.service
 You may access the API via [ip or hostname]:8080/docs .
 
 ## GPS track visualisation
-Different data sources are visualised on 
-https://jaluebbe.github.io/GPSTracker/ .
-The artificial data was created using geojson.io. 
-The real data is taken from a Raspberry Pi equipped with GPS and barometer. 
-The Airbus tree is taken from the sample data supplied with 
-https://github.com/xoolive/traffic .
-Elevation data was determined using the method published in 
-https://github.com/jaluebbe/HeightMap .
