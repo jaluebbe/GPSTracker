@@ -41,6 +41,25 @@ if not log_directory.is_dir():
 app.mount("/archive", StaticFiles(directory=log_directory), name="archive")
 
 
+def split_track_segments(tracking_data, delta_t=600):
+    """
+    split tracking data into segments where the time gap is larger than delta_t.
+    """
+    index_list = (
+        [None]
+        + [
+            i
+            for i in range(1, len(tracking_data))
+            if tracking_data[i]["utc"] - tracking_data[i - 1]["utc"] > delta_t
+        ]
+        + [None]
+    )
+    return [
+        tracking_data[index_list[j - 1] : index_list[j]]
+        for j in range(1, len(index_list))
+    ]
+
+
 async def _get_channel_data(channel):
     pubsub = redis_connection.pubsub(ignore_subscribe_messages=True)
     await pubsub.subscribe(channel)
@@ -163,40 +182,45 @@ async def get_geojson_dataset(
         )
         data = ",\n".join(reversed_data[::-1])
         tracking_data = json.loads(f"[{data}]")
+    track_segments = split_track_segments(tracking_data)
     height_data = []
     if show_gps_altitude:
-        _coords = [
-            [row["lon"], row["lat"], row["alt"]]
-            for row in tracking_data
-            if row.get("alt") is not None
-            and not (row.get("hdop") is not None and row["hdop"] > 20)
-        ]
-        _feature = Feature(geometry=LineString(_coords))
-        _features = [_feature]
+        _features = []
+        for _segment in track_segments:
+            _coords = [
+                [row["lon"], row["lat"], row["alt"]]
+                for row in _segment
+                if row.get("alt") is not None
+                and not (row.get("hdop") is not None and row["hdop"] > 20)
+            ]
+            _feature = Feature(geometry=LineString(_coords))
+            _features.append(_feature)
         _feature_collection = FeatureCollection(
             _features, properties={"summary": "GPS altitude"}
         )
         if len(_coords) > 0:
             height_data.append(_feature_collection)
     if show_pressure_altitude:
-        _coords = [
-            [
-                row["lon"],
-                row["lat"],
-                round(
-                    calculate_pressure_altitude(
-                        pressure=row["pressure"], p0=ref_pressure_mbar * 100
+        _features = []
+        for _segment in track_segments:
+            _coords = [
+                [
+                    row["lon"],
+                    row["lat"],
+                    round(
+                        calculate_pressure_altitude(
+                            pressure=row["pressure"], p0=ref_pressure_mbar * 100
+                        ),
+                        2,
                     ),
-                    2,
-                ),
+                ]
+                for row in _segment
+                if row.get("pressure") is not None
+                and row.get("alt") is not None
+                and not (row.get("hdop") is not None and row["hdop"] > 20)
             ]
-            for row in tracking_data
-            if row.get("pressure") is not None
-            and row.get("alt") is not None
-            and not (row.get("hdop") is not None and row["hdop"] > 20)
-        ]
-        _feature = Feature(geometry=LineString(_coords))
-        _features = [_feature]
+            _feature = Feature(geometry=LineString(_coords))
+            _features.append(_feature)
         _feature_collection = FeatureCollection(
             _features, properties={"summary": "barometric altitude"}
         )
