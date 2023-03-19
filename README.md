@@ -4,63 +4,81 @@ Tracking data from this setup and other sources can be visualised using
 Leaflet.js and several plugins. 
 Optional, orientation data from an IMU may be recorded (work in progress).
 
-## GPS tracking
+## Installation
 It is assumed that you are using Raspberry Pi OS (Lite version) on your 
-Raspberry Pi. You should choose "pi" as username.
-### Setup and requirements
+Raspberry Pi. Depending on the type of your Raspberry Pi your may either the 32bit or the 64bit version. You are free to choose your username except for the name "gpstracker" which will be generated later. In the following we assume "pi" as username.
+### Installation with sudo privileges
+These steps are performed under your username with sudo privileges:
 ```
-sudo apt-get install redis-server gpsd \
-python3-pip git python3-smbus python3-gps python3-scipy chrony gpsd-clients
-sudo pip3 install PyGeodesy fastapi uvicorn redis geojson ahrs \
-aioredis==2 numpy websockets
+sudo apt update
+sudo apt install chrony gpsd git redis-server uvicorn python3-redis \
+python3-gps python3-pip python3-scipy python3-smbus hostapd dnsmasq
+sudo systemctl unmask hostapd
+sudo systemctl disable hostapd
+sudo systemctl disable dnsmasq
+sudo useradd -m gpstracker
+sudo usermod -a -G i2c,video gpstracker
 ```
 
-If you would like to use the most recent version of ahrs instead of the pypi 
-version, perform the following steps:
+### GPS setup and test
+TODO
+
+### Obtain time from GPS
+TODO
+
+### Install GPS tracking software
+We created a "gpstracker" user with the required privileges.
+Now let's switch to this user (to go back to your user, type "exit"):
 ```
+sudo su - gpstracker
+pip install --upgrade pip
+pip install fastapi geojson websockets pygeodesy aioredis
 git clone https://github.com/Mayitzin/ahrs.git
 cd ahrs
-python setup.py install
-```
+python setup.py install --user
+cd
+git clone https://github.com/jaluebbe/GPSTracker.git
+cd GPSTracker
+git clone https://github.com/klokantech/klokantech-gl-fonts fonts
+ln -s ../../osm_offline.mbtiles gps_tracker/osm_offline.mbtiles
 
 ```
-sudo cp etc/systemd/system/gpspoller.service /etc/systemd/system/
-chmod +x /home/pi/GPSTracker/gps_tracker/gps_poller.py
+
+### Test Python scripts
+
+### Start Python scripts as system services during boot
+```
+sudo cp /home/gpstracker/etc/systemd/system/gpspoller.service /etc/systemd/system/
 sudo systemctl enable gpspoller.service
 ```
 
 ```
-sudo cp etc/systemd/system/gps_baro_merge.service /etc/systemd/system/
-chmod +x /home/pi/GPSTracker/gps_tracker/gps_baro_merge.py
+sudo cp /home/gpstracker/etc/systemd/system/gps_baro_merge.service /etc/systemd/system/
 sudo systemctl enable gps_baro_merge.service
 ```
 
 Optional, if a shutdown button is attached between GND and GPIO21:
 ```
-sudo cp etc/systemd/system/button_shutdown.service /etc/systemd/system/
-chmod +x /home/pi/GPSTracker/gps_tracker/button_shutdown.py
+sudo cp /home/gpstracker/etc/systemd/system/button_shutdown.service /etc/systemd/system/
 sudo systemctl enable button_shutdown.service
 ```
 
 Optional, if data of an attached pressure sensor should be logged
 separately:
 ```
-sudo cp etc/systemd/system/pressurelogger.service /etc/systemd/system/
-chmod +x /home/pi/GPSTracker/gps_tracker/pressure_logger.py
+sudo cp /home/gpstracker/etc/systemd/system/pressurelogger.service /etc/systemd/system/
 sudo systemctl enable pressurelogger.service
 ```
 
 To use a pressure sensor (BME280, BMP280 or BMP388):
 ```
-sudo cp etc/systemd/system/barometer_poller.service /etc/systemd/system/
-chmod +x /home/pi/GPSTracker/gps_tracker/barometer_poller.py
+sudo cp /home/gpstracker/etc/systemd/system/barometer_poller.service /etc/systemd/system/
 sudo systemctl enable barometer_poller.service
 ```
 
 Optional, if using an LSM sensor:
 ```
-sudo cp etc/systemd/system/lsm_poller.service /etc/systemd/system/
-chmod +x /home/pi/GPSTracker/gps_tracker/lsm_poller.py
+sudo cp /home/gpstracker/etc/systemd/system/lsm_poller.service /etc/systemd/system/
 sudo systemctl enable lsm_poller.service
 ```
 
@@ -68,14 +86,8 @@ If you would like to use sensor fusion, skip barometer_poller and
 lsm_poller. 
 Instead, use the imu_baro_poller:
 ```
-sudo cp etc/systemd/system/imu_baro_poller.service /etc/systemd/system/
-chmod +x /home/pi/GPSTracker/gps_tracker/imu_baro_poller.py
+sudo cp /home/gpstracker/etc/systemd/system/imu_baro_poller.service /etc/systemd/system/
 sudo systemctl enable imu_baro_poller.service
-```
-
-Install fonts required for vector tiles:
-```
-git clone https://github.com/klokantech/klokantech-gl-fonts static/fonts
 ```
 
 Prepare OpenStreetMap offline data:
@@ -87,24 +99,20 @@ the output.mbtiles even on a powerful machine. You may choose another or a
 smaller region.
 For more information see the
 [planetiler documentation](https://github.com/onthegomap/planetiler).
-Finally, copy the output.mbtiles to your Raspberry Pi and create a link to
-its location in the gps_tracker directory:
+Finally, copy the output.mbtiles to your Raspberry Pi and move the file to the
+gpstracker user:
 ```
-ln -s output.mbtiles gps_tracker/osm_offline.mbtiles
-```
-
-#### Data transfer to web page (optional)
-```
-sudo cp etc/systemd/system/transfer_gps_data.service /etc/systemd/system/
-chmod +x /home/pi/GPSTracker/gps_tracker/transfer_data.py
-sudo systemctl enable transfer_gps_data.service
+sudo mv output.mbtiles /home/gpstracker/osm_offline.mbtiles
 ```
 
 #### Local web API (optional)
 ```
-sudo cp etc/systemd/system/gps_tracker_api.service /etc/systemd/system/
+sudo cp /home/gpstracker/etc/systemd/system/gps_tracker_api.service /etc/systemd/system/
 sudo systemctl enable gps_tracker_api.service
 ```
 You may access the API via [ip or hostname]:8080/docs .
+
+### Optimisation of power consumption
+TODO
 
 ## GPS track visualisation
