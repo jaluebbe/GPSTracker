@@ -11,8 +11,8 @@ Raspberry Pi. Depending on the type of your Raspberry Pi your may either the 32b
 These steps are performed under your username with sudo privileges:
 ```
 sudo apt update
-sudo apt install chrony gpsd git redis-server uvicorn python3-redis \
-python3-gps python3-pip python3-scipy python3-smbus hostapd dnsmasq
+sudo apt install chrony gpsd git redis-server python3-gps python3-pip \
+python3-scipy python3-smbus hostapd dnsmasq
 sudo systemctl unmask hostapd
 sudo systemctl disable hostapd
 sudo systemctl disable dnsmasq
@@ -32,7 +32,7 @@ Now let's switch to this user (to go back to your user, type "exit"):
 ```
 sudo su - gpstracker
 pip install --upgrade pip
-pip install fastapi geojson websockets pygeodesy aioredis
+pip install fastapi geojson websockets pygeodesy aioredis redis uvicorn
 git clone https://github.com/Mayitzin/ahrs.git
 cd ahrs
 python setup.py install --user
