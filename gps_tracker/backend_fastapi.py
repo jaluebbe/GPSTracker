@@ -135,17 +135,17 @@ async def get_archived_datasets(
     return datasets
 
 
-@app.get("/api/dataset/{id}.json")
-async def get_dataset(id):
-    reversed_data = await redis_connection.lrange(id.replace("_", ":"), 0, -1)
+@app.get("/api/dataset/{_id}.json")
+async def get_dataset(_id):
+    reversed_data = await redis_connection.lrange(_id.replace("_", ":"), 0, -1)
     data = ",\n".join(reversed_data[::-1])
     return json.loads(f"[{data}]\n")
 
 
-@app.get("/api/move_to_archive/{id}")
-async def move_to_archive(id):
-    key = id.replace("_", ":")
-    file_name = log_directory.joinpath(f"{id}.json")
+@app.get("/api/move_to_archive/{_id}")
+async def move_to_archive(_id):
+    key = _id.replace("_", ":")
+    file_name = log_directory.joinpath(f"{_id}.json")
     reversed_data = await redis_connection.lrange(key, 0, -1)
     data = ",\n".join(reversed_data[::-1])
     if len(data) == 0:
@@ -165,20 +165,20 @@ async def move_to_archive(id):
     return json.loads(json_string)
 
 
-@app.get("/api/dataset/{id}.geojson")
+@app.get("/api/dataset/{_id}.geojson")
 async def get_geojson_dataset(
-    id: str = Query(..., regex="^tracking_[a-z0-9]*_[0-9]{8}$"),
+    _id: str,
     show_pressure_altitude: bool = Query(True),
     show_gps_altitude: bool = Query(False),
     ref_pressure_mbar: float = Query(1013.25),
     from_archive: bool = Query(False),
 ):
     if from_archive:
-        with log_directory.joinpath(f"{id}.json").open() as f:
+        with log_directory.joinpath(f"{_id}.json").open() as f:
             tracking_data = json.load(f)
     else:
         reversed_data = await redis_connection.lrange(
-            id.replace("_", ":"), 0, -1
+            _id.replace("_", ":"), 0, -1
         )
         data = ",\n".join(reversed_data[::-1])
         tracking_data = json.loads(f"[{data}]")
