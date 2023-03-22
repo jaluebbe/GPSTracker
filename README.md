@@ -11,6 +11,8 @@ Raspberry Pi. Depending on the type of your Raspberry Pi your may either the 32b
 These steps are performed under your username with sudo privileges:
 ```
 sudo apt update
+sudo apt upgrade
+sudo apt dist-upgrade
 sudo apt install chrony gpsd git redis-server python3-gps python3-pip \
 python3-scipy python3-smbus hostapd dnsmasq
 sudo systemctl unmask hostapd
@@ -18,20 +20,63 @@ sudo systemctl disable hostapd
 sudo systemctl disable dnsmasq
 sudo useradd -m gpstracker
 sudo usermod -a -G i2c,video gpstracker
+sudo passwd gpstracker
 ```
 
 ### GPS setup and test
-TODO
+If a compatible GPS device is attached via USB set these options in /etc/default/gpsd :
+```
+DEVICES=""
+GPSD_OPTIONS="-n"
+USBAUTO="true"
+```
+Or if the GPS device is attached via serial port, set the following parameters in /etc/default/gpsd :
+```
+DEVICES="/dev/serial0"
+GPSD_OPTIONS="-n"
+USBAUTO="false"
+```
+
+You have to enable the serial port via
+```
+sudo raspi-config
+```
+and select "Interface Options" -> "Serial Port" -> "No" -> "Yes" -> "Ok". The I2C interface should be enabled as well if other sensors like barometer or IMU are connected.
+
+Reboot your device with
+```
+sudo reboot
+```
+if not done before.
+
+Put the GPS antenna close to a window or outdoors and call cgps (terminate with Ctrl+C).
+You should see messages from your device every second or even the coordinates of your location. 
 
 ### Obtain time from GPS
-TODO
+When the GPS is running, it’s time to setup the retrieval of the time via GPS.
+Edit /etc/chrony/chrony.conf and set the following parameters:
+```
+makestep 1 -1
+refclock SHM 0 offset 0.2 refid GPS
+```
+
+Restart chrony by calling
+```
+sudo /etc/init.d/chrony restart
+```
+and call:
+```
+chronyc sources
+```
+
+In the GPS row, the value Reach should be above zero.
+It could take some time, you may recheck later.
 
 ### Install GPS tracking software
 We created a "gpstracker" user with the required privileges.
 Now let's switch to this user (to go back to your user, type "exit"):
 ```
-sudo su - gpstracker
-pip install --upgrade pip
+sudo su - gpstracker  # or login as user gpstracker directly
 pip install fastapi geojson websockets pygeodesy aioredis redis uvicorn
 git clone https://github.com/Mayitzin/ahrs.git
 cd ahrs
@@ -41,10 +86,14 @@ git clone https://github.com/jaluebbe/GPSTracker.git
 cd GPSTracker
 git clone https://github.com/klokantech/klokantech-gl-fonts fonts
 ln -s ../../osm_offline.mbtiles gps_tracker/osm_offline.mbtiles
-
 ```
 
 ### Test Python scripts
+Enter the subfolder containing all the Python scripts:
+```
+cd gps_tracker
+```
+TODO
 
 ### Start Python scripts as system services during boot
 ```
