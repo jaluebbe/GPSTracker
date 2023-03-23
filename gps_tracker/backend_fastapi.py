@@ -33,11 +33,31 @@ redis_connection = aioredis.Redis(host=redis_host, decode_responses=True)
 
 app = FastAPI()
 app.mount("/static", StaticFiles(directory="../static"), name="static")
-app.mount("/fonts", StaticFiles(directory="../fonts"), name="fonts")
+if Path("../fonts").is_dir():
+    app.mount("/fonts", StaticFiles(directory="../fonts"), name="fonts")
 log_directory = Path("../logs_json")
 if not log_directory.is_dir():
     log_directory.mkdir()
 app.mount("/archive", StaticFiles(directory=log_directory), name="archive")
+
+
+def split_track_segments(tracking_data, delta_t=600):
+    """
+    split tracking data into segments where the time gap is larger than delta_t.
+    """
+    index_list = (
+        [None]
+        + [
+            i
+            for i in range(1, len(tracking_data))
+            if tracking_data[i]["utc"] - tracking_data[i - 1]["utc"] > delta_t
+        ]
+        + [None]
+    )
+    return [
+        tracking_data[index_list[j - 1] : index_list[j]]
+        for j in range(1, len(index_list))
+    ]
 
 
 async def _get_channel_data(channel):
@@ -115,17 +135,17 @@ async def get_archived_datasets(
     return datasets
 
 
-@app.get("/api/dataset/{id}.json")
-async def get_dataset(id):
-    reversed_data = await redis_connection.lrange(id.replace("_", ":"), 0, -1)
+@app.get("/api/dataset/{_id}.json")
+async def get_dataset(_id):
+    reversed_data = await redis_connection.lrange(_id.replace("_", ":"), 0, -1)
     data = ",\n".join(reversed_data[::-1])
     return json.loads(f"[{data}]\n")
 
 
-@app.get("/api/move_to_archive/{id}")
-async def move_to_archive(id):
-    key = id.replace("_", ":")
-    file_name = log_directory.joinpath(f"{id}.json")
+@app.get("/api/move_to_archive/{_id}")
+async def move_to_archive(_id):
+    key = _id.replace("_", ":")
+    file_name = log_directory.joinpath(f"{_id}.json")
     reversed_data = await redis_connection.lrange(key, 0, -1)
     data = ",\n".join(reversed_data[::-1])
     if len(data) == 0:
@@ -145,57 +165,62 @@ async def move_to_archive(id):
     return json.loads(json_string)
 
 
-@app.get("/api/dataset/{id}.geojson")
+@app.get("/api/dataset/{_id}.geojson")
 async def get_geojson_dataset(
-    id: str = Query(..., regex="^tracking_[a-z0-9]*_[0-9]{8}$"),
+    _id: str,
     show_pressure_altitude: bool = Query(True),
     show_gps_altitude: bool = Query(False),
     ref_pressure_mbar: float = Query(1013.25),
     from_archive: bool = Query(False),
 ):
     if from_archive:
-        with log_directory.joinpath(f"{id}.json").open() as f:
+        with log_directory.joinpath(f"{_id}.json").open() as f:
             tracking_data = json.load(f)
     else:
         reversed_data = await redis_connection.lrange(
-            id.replace("_", ":"), 0, -1
+            _id.replace("_", ":"), 0, -1
         )
         data = ",\n".join(reversed_data[::-1])
         tracking_data = json.loads(f"[{data}]")
+    track_segments = split_track_segments(tracking_data)
     height_data = []
     if show_gps_altitude:
-        _coords = [
-            [row["lon"], row["lat"], row["alt"]]
-            for row in tracking_data
-            if row.get("alt") is not None
-            and not (row.get("hdop") is not None and row["hdop"] > 20)
-        ]
-        _feature = Feature(geometry=LineString(_coords))
-        _features = [_feature]
+        _features = []
+        for _segment in track_segments:
+            _coords = [
+                [row["lon"], row["lat"], row["alt"]]
+                for row in _segment
+                if row.get("alt") is not None
+                and not (row.get("hdop") is not None and row["hdop"] > 20)
+            ]
+            _feature = Feature(geometry=LineString(_coords))
+            _features.append(_feature)
         _feature_collection = FeatureCollection(
             _features, properties={"summary": "GPS altitude"}
         )
         if len(_coords) > 0:
             height_data.append(_feature_collection)
     if show_pressure_altitude:
-        _coords = [
-            [
-                row["lon"],
-                row["lat"],
-                round(
-                    calculate_pressure_altitude(
-                        pressure=row["pressure"], p0=ref_pressure_mbar * 100
+        _features = []
+        for _segment in track_segments:
+            _coords = [
+                [
+                    row["lon"],
+                    row["lat"],
+                    round(
+                        calculate_pressure_altitude(
+                            pressure=row["pressure"], p0=ref_pressure_mbar * 100
+                        ),
+                        2,
                     ),
-                    2,
-                ),
+                ]
+                for row in _segment
+                if row.get("pressure") is not None
+                and row.get("alt") is not None
+                and not (row.get("hdop") is not None and row["hdop"] > 20)
             ]
-            for row in tracking_data
-            if row.get("pressure") is not None
-            and row.get("alt") is not None
-            and not (row.get("hdop") is not None and row["hdop"] > 20)
-        ]
-        _feature = Feature(geometry=LineString(_coords))
-        _features = [_feature]
+            _feature = Feature(geometry=LineString(_coords))
+            _features.append(_feature)
         _feature_collection = FeatureCollection(
             _features, properties={"summary": "barometric altitude"}
         )

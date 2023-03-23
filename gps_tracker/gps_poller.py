@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+import signal
+import sys
 import asyncio
 import socket
 import json
@@ -8,11 +10,21 @@ import aioredis
 import subprocess
 
 
+def sigterm_handler(signal, frame):
+    # setting the baud rate of the GPS back to standard before rebooting.
+    subprocess.check_output(["gpsctl", "-s", "9600"], timeout=8)
+    sys.exit(0)
+
+
+signal.signal(signal.SIGTERM, sigterm_handler)
+
+
 async def consume_gpsd():
     hostname = socket.gethostname()
     redis_connection = aioredis.Redis()
     async with gps.aiogps.aiogps() as gpsd:
         sky_info = {}
+        config_counter = 0
         devices = None
         old_utc = None
         async for msg in gpsd:
@@ -40,16 +52,24 @@ async def consume_gpsd():
                     await redis_connection.publish("gps", json.dumps(data))
                 if devices is not None and old_utc is not None:
                     _driver = devices[0]["driver"]
-                    if _driver == "u-blox" and data["utc"] - old_utc > 0.16:
-                        # set the data rate of the GPS to 10Hz
+                    _path = devices[0]["path"]
+                    if config_counter > 5:
+                        pass
+                    elif _path != "/dev/serial0":
+                        pass
+                    elif _driver == "u-blox" and data["utc"] - old_utc > 0.7:
+                        # set the data rate of the GPS to 2Hz
+                        # (up to 10Hz is possible)
                         subprocess.check_output(
-                            ["gpsctl", "-c", "0.1", "-s", "115200"], timeout=8
+                            ["gpsctl", "-c", "0.5", "-s", "115200"], timeout=8
                         )
+                        config_counter = config_counter + 1
                     elif _driver == "MTK-3301" and data["utc"] - old_utc > 0.7:
                         # set the data rate of the GPS to 2Hz
                         subprocess.check_output(
                             ["gpsctl", "-c", "0.5"], timeout=8
                         )
+                        config_counter = config_counter + 1
                 old_utc = data["utc"]
             elif msg["class"] == "DEVICES":
                 devices = msg["devices"]

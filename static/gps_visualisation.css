@@ -24,3 +24,29 @@ body {
     margin: 0 0 5px;
     color: #777;
 }
+
+.grid-container {
+    display: grid;
+    column-gap: 5px;
+    row-gap: 5px;
+}
+
+.two-columns {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    column-gap: 5px;
+    row-gap: 5px;
+}
+
+.three-columns {
+    display: grid;
+    grid-template-columns: auto 1fr 1fr;
+    column-gap: 5px;
+    row-gap: 5px;
+}
+
+.tooltip-grid-container {
+    display: grid;
+    grid-template-columns: auto auto;
+    column-gap: 5px;
+}
