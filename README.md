@@ -188,12 +188,53 @@ Finally, copy the output.mbtiles to the following location on your Raspberry Pi:
 /home/gpstracker/osm_offline.mbtiles
 ```
 
-#### Local web API
+### Local web API
 ```
 sudo cp /home/gpstracker/GPSTracker/etc/systemd/system/gps_tracker_api.service /etc/systemd/system/
 sudo systemctl enable gps_tracker_api.service
 ```
 You may access the API via [ip or hostname]:8080/docs .
+
+If you would like to create a redirection from port 80 to port 8080,
+you should set up lighttpd in the following way:
+```
+sudo apt install lighttpd
+sudo cp /home/gpstracker/GPSTracker/etc/lighttpd/lighttpd.conf /etc/lighttpd/
+sudo systemctl restart lighttpd.service  # or reboot
+```
+
+### WLAN access point setup
+Follow this [Tutorial](https://www.raspberryconnect.com/projects/65-raspberrypi-hotspot-accesspoints/158-raspberry-pi-auto-wifi-hotspot-switch-direct-connection)
+(some steps are already completed).
+```
+sudo cp /home/gpstracker/GPSTracker/etc/hostapd/hostapd.conf /etc/hostapd/hostapd.conf
+```
+Edit /etc/hostapd/hostapd.conf and set "my-wifi-network" as well as "my-wifi-password" to your needs.
+Attention, these are the login credentials for clients connecting to your
+access point on the Raspberry Pi.
+
+Edit /etc/dnsmasq.conf and add the following lines at the bottom:
+```
+#AutoHotspot Config
+#stop DNSmasq from using resolv.conf
+interface=wlan0
+no-resolv
+bind-interfaces
+dhcp-range=10.0.0.50,10.0.0.100,12h
+address=/gps/10.0.0.5
+address=/vigor22/10.0.0.5
+```
+
+Finally, set up the service to perform the choice of the connection during startup:
+```
+sudo cp /home/gpstracker/GPSTracker/usr/bin/autohotspot /usr/bin/
+sudo cp /home/gpstracker/GPSTracker/etc/systemd/system/autohotspot.service /etc/systemd/system/
+sudo systemctl enable autohotspot.service
+```
+If your known WiFi networks are not available, the hotspot will be created instead.
+When connected to this hotspot, you may type http://gps which will be forwarded to the main page.
+A shortcut to the vigor22 demo is available via http://vigor22 .
+Further shortcuts may be created by modification of dnsmasq.conf and lighttpd.conf .
 
 ### Optimisation of power consumption
 To reduce the power consumption on a Raspberry Pi Zero you should switch to the legacy graphics driver via
