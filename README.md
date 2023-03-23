@@ -93,75 +93,120 @@ Enter the subfolder containing all the Python scripts:
 ```
 cd gps_tracker
 ```
-TODO
-
-### Start Python scripts as system services during boot
+Open a second terminal window where you call
 ```
-sudo cp /home/gpstracker/etc/systemd/system/gpspoller.service /etc/systemd/system/
+redis-cli
+```
+and enter:
+```
+subscribe gps barometer imu
+```
+Go back to your first window and start consuming GPS data by calling:
+```
+./gps_poller.py
+```
+The script should start without errors and if the GPS has a fix, messages may appear
+on the "gps" channel on the Redis server (see the other window).
+Prepare to start this script on boot and restart if crashed:
+```
+sudo cp /home/gpstracker/GPSTracker/etc/systemd/system/gpspoller.service /etc/systemd/system/
 sudo systemctl enable gpspoller.service
 ```
+Instead of "enable" you may also call "disable", "start", "stop" or "restart".
+Attention, do not try these steps as "gpstracker" user as it is missing sudo privileges.
+Use your personal user e.g. "pi" instead.
 
+For the following scripts, you should carefully decide which to install to cover your requirements.
+
+To test consumption of barometer data is is the same procedure with (supports BME280, BMP280 or BMP388)):
 ```
-sudo cp /home/gpstracker/etc/systemd/system/gps_baro_merge.service /etc/systemd/system/
+./barometer_poller.py
+```
+Permanent install:
+```
+sudo cp /home/gpstracker/GPSTracker/etc/systemd/system/barometer_poller.service /etc/systemd/system/
+sudo systemctl enable barometer_poller.service
+```
+
+Data from an LSM IMU is consumed using:
+```
+./lsm_poller.py
+```
+Permanent install:
+```
+sudo cp /home/gpstracker/GPSTracker/etc/systemd/system/lsm_poller.service /etc/systemd/system/
+sudo systemctl enable lsm_poller.service
+```
+
+Consuming barometer and IMU data at the same time is done using:
+```
+./imu_baro_poller.py
+```
+Permanent install:
+```
+sudo cp /home/gpstracker/GPSTracker/etc/systemd/system/imu_baro_poller.service /etc/systemd/system/
+sudo systemctl enable imu_baro_poller.service
+```
+
+The data logging process is included in (even if no barometer is being used):
+```
+./gps_baro_merge.py
+```
+Permanent install:
+```
+sudo cp /home/gpstracker/GPSTracker/etc/systemd/system/gps_baro_merge.service /etc/systemd/system/
 sudo systemctl enable gps_baro_merge.service
 ```
 
 Optional, if a shutdown button is attached between GND and GPIO21:
 ```
-sudo cp /home/gpstracker/etc/systemd/system/button_shutdown.service /etc/systemd/system/
+sudo cp /home/gpstracker/GPSTracker/etc/systemd/system/button_shutdown.service /etc/systemd/system/
+```
+Edit /home/gpstracker/GPSTracker/etc/systemd/system/button_shutdown.service if your username is not "pi".
+```
 sudo systemctl enable button_shutdown.service
 ```
 
 Optional, if data of an attached pressure sensor should be logged
-separately:
+separately even if no GPS data is available:
 ```
-sudo cp /home/gpstracker/etc/systemd/system/pressurelogger.service /etc/systemd/system/
+sudo cp /home/gpstracker/GPSTracker/etc/systemd/system/pressurelogger.service /etc/systemd/system/
 sudo systemctl enable pressurelogger.service
-```
-
-To use a pressure sensor (BME280, BMP280 or BMP388):
-```
-sudo cp /home/gpstracker/etc/systemd/system/barometer_poller.service /etc/systemd/system/
-sudo systemctl enable barometer_poller.service
-```
-
-Optional, if using an LSM sensor:
-```
-sudo cp /home/gpstracker/etc/systemd/system/lsm_poller.service /etc/systemd/system/
-sudo systemctl enable lsm_poller.service
-```
-
-If you would like to use sensor fusion, skip barometer_poller and
-lsm_poller. 
-Instead, use the imu_baro_poller:
-```
-sudo cp /home/gpstracker/etc/systemd/system/imu_baro_poller.service /etc/systemd/system/
-sudo systemctl enable imu_baro_poller.service
 ```
 
 Prepare OpenStreetMap offline data:
 ```
 docker run -e JAVA_TOOL_OPTIONS="-Xmx10g" -v "$(pwd)/data":/data ghcr.io/onthegomap/planetiler:latest --download --area=europe
 ```
-Do not try this on a Raspberry Pi. It may take more than a day to create
+You need Docker. Do not try this on a Raspberry Pi. It may take more than a day to create
 the output.mbtiles even on a powerful machine. You may choose another or a
-smaller region.
+smaller region (e.g. "germany" or "dach" to include Austria, Germany and Switzerland).
 For more information see the
 [planetiler documentation](https://github.com/onthegomap/planetiler).
-Finally, copy the output.mbtiles to your Raspberry Pi and move the file to the
-gpstracker user:
+Finally, copy the output.mbtiles to the following location on your Raspberry Pi:
 ```
-sudo mv output.mbtiles /home/gpstracker/osm_offline.mbtiles
+/home/gpstracker/osm_offline.mbtiles
 ```
 
-#### Local web API (optional)
+#### Local web API
 ```
-sudo cp /home/gpstracker/etc/systemd/system/gps_tracker_api.service /etc/systemd/system/
+sudo cp /home/gpstracker/GPSTracker/etc/systemd/system/gps_tracker_api.service /etc/systemd/system/
 sudo systemctl enable gps_tracker_api.service
 ```
 You may access the API via [ip or hostname]:8080/docs .
 
 ### Optimisation of power consumption
-TODO
+To reduce the power consumption on a Raspberry Pi Zero you should switch to the legacy graphics driver via
+```
+sudo raspi-config
+```
+and select "Advanced" -> "GL driver" -> "Legacy" -> "Ok".
+Now you could disable HDMI by calling:
+```
+/usr/bin/tvservice -o
+```
+You may setup your /etc/rc.local in a similar way as the file in /home/gpstracker/GPSTracker/etc/rc.local
+to switch of HDMI at boot.
 
 ## GPS track visualisation
+TODO
