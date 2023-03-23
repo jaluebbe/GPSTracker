@@ -162,7 +162,7 @@ Optional, if a shutdown button is attached between GND and GPIO21:
 ```
 sudo cp /home/gpstracker/GPSTracker/etc/systemd/system/button_shutdown.service /etc/systemd/system/
 ```
-Edit /home/gpstracker/GPSTracker/etc/systemd/system/button_shutdown.service if your username is not "pi".
+Edit /etc/systemd/system/button_shutdown.service if your username is not "pi".
 ```
 sudo systemctl enable button_shutdown.service
 ```
