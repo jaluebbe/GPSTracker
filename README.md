@@ -208,23 +208,12 @@ sudo systemctl restart lighttpd.service  # or reboot
 Follow this [Tutorial](https://www.raspberryconnect.com/projects/65-raspberrypi-hotspot-accesspoints/158-raspberry-pi-auto-wifi-hotspot-switch-direct-connection)
 (some steps are already completed).
 ```
+sudo cp /home/gpstracker/GPSTracker/etc/dnsmasq.conf /etc/dnsmasq.conf
 sudo cp /home/gpstracker/GPSTracker/etc/hostapd/hostapd.conf /etc/hostapd/hostapd.conf
 ```
 Edit /etc/hostapd/hostapd.conf and set "my-wifi-network" as well as "my-wifi-password" to your needs.
 Attention, these are the login credentials for clients connecting to your
 access point on the Raspberry Pi.
-
-Edit /etc/dnsmasq.conf and add the following lines at the bottom:
-```
-#AutoHotspot Config
-#stop DNSmasq from using resolv.conf
-interface=wlan0
-no-resolv
-bind-interfaces
-dhcp-range=10.0.0.50,10.0.0.100,12h
-address=/gps/10.0.0.5
-address=/vigor22/10.0.0.5
-```
 
 Finally, set up the service to perform the choice of the connection during startup:
 ```
