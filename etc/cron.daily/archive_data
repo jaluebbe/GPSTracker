@@ -1,0 +1,2 @@
+#!/bin/bash
+python3 /home/gpstracker/GPSTracker/gps_tracker/archive_data.py

@@ -14,7 +14,7 @@ sudo apt update
 sudo apt upgrade
 sudo apt dist-upgrade
 sudo apt install chrony gpsd git redis-server python3-gps python3-pip \
-python3-scipy python3-smbus hostapd dnsmasq
+python3-scipy python3-smbus hostapd dnsmasq anacron
 sudo systemctl unmask hostapd
 sudo systemctl disable hostapd
 sudo systemctl disable dnsmasq
@@ -192,6 +192,7 @@ Finally, copy the output.mbtiles to the following location on your Raspberry Pi:
 ```
 sudo cp /home/gpstracker/GPSTracker/etc/systemd/system/gps_tracker_api.service /etc/systemd/system/
 sudo systemctl enable gps_tracker_api.service
+sudo cp /home/gpstracker/GPSTracker/etc/cron.daily/archive_data /etc/cron.daily/
 ```
 You may access the API via [ip or hostname]:8080/docs .
 
