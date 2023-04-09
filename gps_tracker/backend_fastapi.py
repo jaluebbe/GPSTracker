@@ -193,12 +193,14 @@ async def get_geojson_dataset(
                 if row.get("alt") is not None
                 and not (row.get("hdop") is not None and row["hdop"] > 20)
             ]
+            if len(_coords) == 0:
+                continue
             _feature = Feature(geometry=LineString(_coords))
             _features.append(_feature)
-        _feature_collection = FeatureCollection(
-            _features, properties={"summary": "GPS altitude"}
-        )
-        if len(_coords) > 0:
+        if len(_features) > 0:
+            _feature_collection = FeatureCollection(
+                _features, properties={"summary": "GPS altitude"}
+            )
             height_data.append(_feature_collection)
     if show_pressure_altitude:
         _features = []
@@ -219,12 +221,14 @@ async def get_geojson_dataset(
                 and row.get("alt") is not None
                 and not (row.get("hdop") is not None and row["hdop"] > 20)
             ]
+            if len(_coords) == 0:
+                continue
             _feature = Feature(geometry=LineString(_coords))
             _features.append(_feature)
-        _feature_collection = FeatureCollection(
-            _features, properties={"summary": "barometric altitude"}
-        )
-        if len(_coords) > 0:
+        if len(_features) > 0:
+            _feature_collection = FeatureCollection(
+                _features, properties={"summary": "barometric altitude"}
+            )
             height_data.append(_feature_collection)
     return height_data
 
