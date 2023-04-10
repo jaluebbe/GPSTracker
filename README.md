@@ -14,7 +14,7 @@ sudo apt update
 sudo apt upgrade
 sudo apt dist-upgrade
 sudo apt install chrony gpsd git redis-server python3-gps python3-pip \
-python3-scipy python3-smbus hostapd dnsmasq anacron
+python3-scipy python3-smbus python3-h5py hostapd dnsmasq anacron
 sudo systemctl unmask hostapd
 sudo systemctl disable hostapd
 sudo systemctl disable dnsmasq
@@ -86,6 +86,7 @@ git clone https://github.com/jaluebbe/GPSTracker.git
 cd GPSTracker
 git clone https://github.com/klokantech/klokantech-gl-fonts fonts
 ln -s ../../osm_offline.mbtiles gps_tracker/osm_offline.mbtiles
+ln -s ../../GEBCO_2022.nc gps_tracker/GEBCO_2022.nc
 ```
 
 ### Test Python scripts
@@ -187,6 +188,9 @@ Finally, copy the output.mbtiles to the following location on your Raspberry Pi:
 ```
 /home/gpstracker/osm_offline.mbtiles
 ```
+
+Download the [GEBCO_2022 grid](https://www.gebco.net/data_and_products/gridded_bathymetry_data/)
+in netCDF format and copy GEBCO_2022.nc to the user folder of "gpstracker".
 
 ### Local web API
 ```

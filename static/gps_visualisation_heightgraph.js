@@ -12,6 +12,8 @@ legend.onAdd = function(map) {
         '</select></div>' +
         '<div><input type="radio" id="showGpsAltitude" name="selectSource">' +
         '<label for="showGpsAltitude">GPS altitude</label></div>' +
+        '<div><input type="radio" id="showGebcoAltitude" name="selectSource">' +
+        '<label for="showGebcoAltitude">GEBCO altitude</label></div>' +
         '<div><input type="radio" id="showPressureAltitude" name="selectSource" checked>' +
         '<label for="showPressureAltitude">pressure altitude</label></div>'+
         '<div><label for="refPressureInput">p<sub>ref</sub> (mbar)</label>' +
@@ -35,12 +37,16 @@ function loadGeoJSON(fileName) {
     var xhr = new XMLHttpRequest();
     xhr.open('GET', fileName +
         '&show_gps_altitude=' + document.getElementById("showGpsAltitude").checked +
+        '&show_gebco_altitude=' + document.getElementById("showGebcoAltitude").checked +
         '&show_pressure_altitude=' + document.getElementById("showPressureAltitude").checked +
         '&ref_pressure_mbar=' + document.getElementById("refPressureInput").value);
     xhr.setRequestHeader('Content-Type', 'application/json');
     xhr.onload = function() {
         map.spin(false);
         if (xhr.status === 200) {
+            if (document.getElementById("showGebcoAltitude").checked) {
+                map.attributionControl.addAttribution('&copy <a href="https://www.gebco.net/data_and_products/gridded_bathymetry_data/gebco_2022/">GEBCO_2022 Grid</a>');
+            }
             var geojson = JSON.parse(xhr.responseText);
             if (hg !== undefined)
                 hg.remove();

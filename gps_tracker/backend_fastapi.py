@@ -22,6 +22,7 @@ import numpy as np
 from pathlib import Path
 from ellipsoid_fit import ellipsoid_fit, data_regularize
 from algorithms import calculate_pressure_altitude
+from gebco import Gebco
 import gyr_calibration
 
 
@@ -170,6 +171,7 @@ async def get_geojson_dataset(
     _id: str,
     show_pressure_altitude: bool = Query(True),
     show_gps_altitude: bool = Query(False),
+    show_gebco_altitude: bool = Query(False),
     ref_pressure_mbar: float = Query(1013.25),
     from_archive: bool = Query(False),
 ):
@@ -228,6 +230,29 @@ async def get_geojson_dataset(
         if len(_features) > 0:
             _feature_collection = FeatureCollection(
                 _features, properties={"summary": "barometric altitude"}
+            )
+            height_data.append(_feature_collection)
+    if show_gebco_altitude:
+        _gebco = Gebco()
+        _features = []
+        for _segment in track_segments:
+            _coords = [
+                [
+                    row["lon"],
+                    row["lat"],
+                    _gebco.get_height(row["lat"], row["lon"])["altitude_m"]
+                ]
+                for row in _segment
+                if row.get("alt") is not None
+                and not (row.get("hdop") is not None and row["hdop"] > 20)
+            ]
+            if len(_coords) == 0:
+                continue
+            _feature = Feature(geometry=LineString(_coords))
+            _features.append(_feature)
+        if len(_features) > 0:
+            _feature_collection = FeatureCollection(
+                _features, properties={"summary": "GEBCO altitude"}
             )
             height_data.append(_feature_collection)
     return height_data
