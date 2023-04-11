@@ -2,11 +2,18 @@ const USE_GEOJSON = true;
 var legend = L.control({
     position: 'topright'
 });
+
+function resetInputs() {
+    refPressureInput.value = "1013.2";
+    fromTimeInput.value = "";
+    untilTimeInput.value = "";
+};
+
 legend.onAdd = function(map) {
     this._div = L.DomUtil.create('div', 'info legend');
     this._div.innerHTML =
         '<div style="display: grid; grid-gap: 2px">' +
-        '<div>Choose data</div><div><select id="trackSelect">' +
+        '<div>Choose data</div><div><select id="trackSelect" onchange="resetInputs();">' +
         '<optgroup label="Redis DB" id="redisOptions"></optgroup>' +
         '<optgroup label="Archive" id="archiveOptions"></optgroup>' +
         '</select></div>' +
@@ -16,8 +23,14 @@ legend.onAdd = function(map) {
         '<label for="showGebcoAltitude">GEBCO altitude</label></div>' +
         '<div><input type="radio" id="showPressureAltitude" name="selectSource" checked>' +
         '<label for="showPressureAltitude">pressure altitude</label></div>'+
-        '<div><label for="refPressureInput">p<sub>ref</sub> (mbar)</label>' +
-        '<input type="number" id="refPressureInput" min="950" max="1050" value="1013.2" step="0.1"></div>' +
+        '<div class="two-columns">' +
+        '<label for="refPressureInput">p<sub>ref</sub> (mbar)</label>' +
+        '<input type="number" id="refPressureInput" min="950" max="1050" value="1013.2" step="0.1">' +
+        '</div>' +
+        '<div class="two-columns">' +
+        '<label for="fromTimeInput">from</label><input type="time" id="fromTimeInput" step="1">' +
+        '<label for="untilTimeInput">until</label><input type="time" id="untilTimeInput" step="1">' +
+        '</div>' +
         '<div><button onclick="loadTrackingData();">load data</button></div>' +
         '<div><button onclick="exportTrackingData();">export as JSON</button></div></div>';
     L.DomEvent.disableClickPropagation(this._div);
@@ -35,11 +48,18 @@ function adjustHeightgraphWidth() {
 var geoJsonLayer = L.geoJson([]).addTo(map);
 function loadGeoJSON(fileName) {
     var xhr = new XMLHttpRequest();
-    xhr.open('GET', fileName +
-        '&show_gps_altitude=' + document.getElementById("showGpsAltitude").checked +
-        '&show_gebco_altitude=' + document.getElementById("showGebcoAltitude").checked +
-        '&show_pressure_altitude=' + document.getElementById("showPressureAltitude").checked +
-        '&ref_pressure_mbar=' + document.getElementById("refPressureInput").value);
+    let dateElements = trackSelect.value.match(/_(?<year>[\d]{4})(?<month>[\d]{2})(?<day>[\d]{2})\./).groups;
+    let dateString = dateElements.year + "-" + dateElements.month + "-" + dateElements.day;
+    let requestString = fileName +
+        '&show_gps_altitude=' + showGpsAltitude.checked +
+        '&show_gebco_altitude=' + showGebcoAltitude.checked +
+        '&show_pressure_altitude=' + showPressureAltitude.checked +
+        '&ref_pressure_mbar=' + refPressureInput.value;
+    if (fromTimeInput.value.length > 0)
+        requestString = requestString + "&utc_min=" + new Date(dateString + ", " + fromTimeInput.value + " UTC") / 1e3;
+    if (untilTimeInput.value.length > 0)
+        requestString = requestString + "&utc_max=" + new Date(dateString + ", " + untilTimeInput.value + " UTC") / 1e3;
+    xhr.open('GET', requestString);
     xhr.setRequestHeader('Content-Type', 'application/json');
     xhr.onload = function() {
         map.spin(false);
@@ -79,13 +99,20 @@ function loadTrackingData() {
 }
 function exportTrackingData() {
     let url = document.getElementById("trackSelect").value.replace(".geojson", ".json");
+    let dateElements = url.match(/_(?<year>[\d]{4})(?<month>[\d]{2})(?<day>[\d]{2})\./).groups;
+    let dateString = dateElements.year + "-" + dateElements.month + "-" + dateElements.day;
+    let requestString = url;
+    if (fromTimeInput.value.length > 0)
+        requestString = requestString + "&utc_min=" + new Date(dateString + ", " + fromTimeInput.value + " UTC") / 1e3;
+    if (untilTimeInput.value.length > 0)
+        requestString = requestString + "&utc_max=" + new Date(dateString + ", " + untilTimeInput.value + " UTC") / 1e3;
     let match = url.match(".*/(tracking.*.json)?.*$");
     if (match == null) {
         return;
     }
     let exportFileName = match[1];
     var xhr = new XMLHttpRequest();
-    xhr.open('GET', url);
+    xhr.open('GET', requestString);
     xhr.setRequestHeader('Content-Type', 'application/json');
     xhr.onload = function() {
         map.spin(false);
