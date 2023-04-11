@@ -6,7 +6,7 @@ import os
 import numpy as np
 import pygeodesy
 from collections import deque
-from time import localtime, strftime
+from time import localtime, strftime, gmtime
 
 sys.path.append("/home/pi/GPSTracker")
 
@@ -166,5 +166,7 @@ for item in _pubsub.listen():
             if dump_ignore_keys is not None:
                 for key in dump_ignore_keys:
                     data.pop(key, None)
-            key = "tracking:{}:{}".format(data["hostname"], strftime("%Y%m%d"))
+            key = "tracking:{}:{}".format(
+                data["hostname"], strftime("%Y%m%d", gmtime())
+            )
             redis_connection.lpush(key, json.dumps(data))

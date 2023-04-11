@@ -115,3 +115,6 @@ new_calibration.json
 
 # downloaded fonts
 fonts/
+
+# netCDF files
+*.nc

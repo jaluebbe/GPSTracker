@@ -33,7 +33,7 @@ body {
 
 .two-columns {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: auto auto;
     column-gap: 5px;
     row-gap: 5px;
 }
