@@ -49,16 +49,26 @@ var geoJsonLayer = L.geoJson([]).addTo(map);
 function loadGeoJSON(fileName) {
     var xhr = new XMLHttpRequest();
     let dateElements = trackSelect.value.match(/_(?<year>[\d]{4})(?<month>[\d]{2})(?<day>[\d]{2})\./).groups;
-    let dateString = dateElements.year + "-" + dateElements.month + "-" + dateElements.day;
     let requestString = fileName +
         '&show_gps_altitude=' + showGpsAltitude.checked +
         '&show_gebco_altitude=' + showGebcoAltitude.checked +
         '&show_pressure_altitude=' + showPressureAltitude.checked +
         '&ref_pressure_mbar=' + refPressureInput.value;
-    if (fromTimeInput.value.length > 0)
-        requestString = requestString + "&utc_min=" + new Date(dateString + ", " + fromTimeInput.value + " UTC") / 1e3;
-    if (untilTimeInput.value.length > 0)
-        requestString = requestString + "&utc_max=" + new Date(dateString + ", " + untilTimeInput.value + " UTC") / 1e3;
+    if (fromTimeInput.value.length > 0) {
+        let fromTimeElements = fromTimeInput.value.split(":");
+        let fromSeconds = 0;
+        if (fromTimeElements.length > 2)
+            fromSeconds = fromTimeElements[2];
+        let fromDate = Date.UTC(dateElements.year, dateElements.month - 1, dateElements.day, fromTimeElements[0], fromTimeElements[1], fromSeconds);
+        requestString = requestString + "&utc_min=" + fromDate / 1e3;}
+    if (untilTimeInput.value.length > 0) {
+        let untilTimeElements = untilTimeInput.value.split(":");
+        let untilSeconds = 0;
+        if (untilTimeElements.length > 2)
+            untilSeconds = untilTimeElements[2];
+        let untilDate = Date.UTC(dateElements.year, dateElements.month - 1, dateElements.day, untilTimeElements[0], untilTimeElements[1], untilSeconds);
+        requestString = requestString + "&utc_max=" + untilDate / 1e3;
+    }
     xhr.open('GET', requestString);
     xhr.setRequestHeader('Content-Type', 'application/json');
     xhr.onload = function() {
@@ -100,12 +110,22 @@ function loadTrackingData() {
 function exportTrackingData() {
     let url = document.getElementById("trackSelect").value.replace(".geojson", ".json");
     let dateElements = url.match(/_(?<year>[\d]{4})(?<month>[\d]{2})(?<day>[\d]{2})\./).groups;
-    let dateString = dateElements.year + "-" + dateElements.month + "-" + dateElements.day;
     let requestString = url;
-    if (fromTimeInput.value.length > 0)
-        requestString = requestString + "&utc_min=" + new Date(dateString + ", " + fromTimeInput.value + " UTC") / 1e3;
-    if (untilTimeInput.value.length > 0)
-        requestString = requestString + "&utc_max=" + new Date(dateString + ", " + untilTimeInput.value + " UTC") / 1e3;
+    if (fromTimeInput.value.length > 0) {
+        let fromTimeElements = fromTimeInput.value.split(":");
+        let fromSeconds = 0;
+        if (fromTimeElements.length > 2)
+            fromSeconds = fromTimeElements[2];
+        let fromDate = Date.UTC(dateElements.year, dateElements.month - 1, dateElements.day, fromTimeElements[0], fromTimeElements[1], fromSeconds);
+        requestString = requestString + "&utc_min=" + fromDate / 1e3;}
+    if (untilTimeInput.value.length > 0) {
+        let untilTimeElements = untilTimeInput.value.split(":");
+        let untilSeconds = 0;
+        if (untilTimeElements.length > 2)
+            untilSeconds = untilTimeElements[2];
+        let untilDate = Date.UTC(dateElements.year, dateElements.month - 1, dateElements.day, untilTimeElements[0], untilTimeElements[1], untilSeconds);
+        requestString = requestString + "&utc_max=" + untilDate / 1e3;
+    }
     let match = url.match(".*/(tracking.*.json)?.*$");
     if (match == null) {
         return;
