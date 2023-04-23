@@ -201,11 +201,9 @@ sudo cp /home/gpstracker/GPSTracker/etc/cron.daily/archive_data /etc/cron.daily/
 You may access the API via [ip or hostname]:8080/docs .
 
 If you would like to create a redirection from port 80 to port 8080,
-you should set up lighttpd in the following way:
+you should add the following line to /etc/rc.local :
 ```
-sudo apt install lighttpd
-sudo cp /home/gpstracker/GPSTracker/etc/lighttpd/lighttpd.conf /etc/lighttpd/
-sudo systemctl restart lighttpd.service  # or reboot
+/usr/sbin/iptables -A PREROUTING -t nat -i wlan0 -p tcp --dport 80 -j REDIRECT --to-port 8080
 ```
 
 ### WLAN access point setup
@@ -228,7 +226,7 @@ sudo systemctl enable autohotspot.service
 If your known WiFi networks are not available, the hotspot will be created instead.
 When connected to this hotspot, you may type http://gps which will be forwarded to the main page.
 A shortcut to the vigor22 demo is available via http://vigor22 .
-Further shortcuts may be created by modification of dnsmasq.conf and lighttpd.conf .
+Further shortcuts may be created by modification of dnsmasq.conf and backend_fastapi.py .
 
 ### Optimisation of power consumption
 To reduce the power consumption on a Raspberry Pi Zero you should switch to the legacy graphics driver via

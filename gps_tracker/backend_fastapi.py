@@ -75,8 +75,13 @@ async def _get_channel_data(channel):
 
 
 @app.get("/", include_in_schema=False)
-async def root():
-    return RedirectResponse("/static/index.html")
+async def root(request: Request):
+    if request.url.hostname.startswith("vigor22"):
+        return RedirectResponse("/static/vigor22.html")
+    elif request.url.hostname.startswith("rotation"):
+        return RedirectResponse("/static/rotation_monitor.html")
+    else:
+        return RedirectResponse("/static/index.html")
 
 
 @app.get("/api/websocket_connections")
@@ -347,17 +352,14 @@ def get_vector_metadata(region: str, request: Request):
     if result is None:
         raise HTTPException(status_code=404, detail="Metadata not found.")
     if request.url.port is None:
-        # workaround for operation behind reverse proxy
         port_suffix = ""
-        scheme = "https"
     else:
         port_suffix = f":{request.url.port}"
-        scheme = request.url.scheme
     metadata = {
         "tilejson": "2.0.0",
         "scheme": "xyz",
         "tiles": [
-            f"{scheme}://{request.url.hostname}{port_suffix}"
+            f"{request.url.scheme}://{request.url.hostname}{port_suffix}"
             f"/api/vector/tiles/{region}/{{z}}/{{x}}/{{y}}.pbf"
         ],
     }
