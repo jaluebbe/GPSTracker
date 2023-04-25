@@ -1,6 +1,6 @@
 function refreshTrackingIndex() {
     var xhr = new XMLHttpRequest();
-    xhr.open('GET', '../api/available_datasets?category=tracking');
+    xhr.open('GET', '../api/available_datasets?category=' + CATEGORY);
     xhr.setRequestHeader('Content-Type', 'application/json');
     xhr.onload = function() {
         if (xhr.status === 200) {
@@ -28,7 +28,7 @@ function refreshTrackingIndex() {
 
 function refreshArchiveIndex() {
     var xhr = new XMLHttpRequest();
-    xhr.open('GET', '../api/archived_datasets?category=tracking');
+    xhr.open('GET', '../api/archived_datasets?category=' + CATEGORY);
     xhr.setRequestHeader('Content-Type', 'application/json');
     xhr.onload = function() {
         if (xhr.status === 200) {

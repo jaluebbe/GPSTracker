@@ -1,4 +1,5 @@
 const USE_GEOJSON = true;
+const CATEGORY = "tracking";
 var legend = L.control({
     position: 'topright'
 });
