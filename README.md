@@ -167,6 +167,10 @@ Edit /etc/systemd/system/button_shutdown.service if your username is not "pi".
 ```
 sudo systemctl enable button_shutdown.service
 ```
+Or, instead of the shutdown button, a switch to disable WiFi may be connected
+to GND and GPIO21. The setup is similar to the installation of the shutdown
+button but the service file is called "jumper_wifi_off.service" instead.
+
 
 Optional, if data of an attached pressure sensor should be logged
 separately even if no GPS data is available:
