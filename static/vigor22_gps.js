@@ -404,6 +404,14 @@ function onLocationFound(e) {
         }
         info.showText(newRightRate * 1e2 + '%');
         leftInfo.showText(newLeftRate * 1e2 + '%');
+        sendFeedback({
+            right_rate: newRightRate,
+            left_rate: newLeftRate,
+            longitude: e.longitude,
+            latitude: e.latitude,
+            speed: e.speed,
+            heading: e.heading
+        });
         if (newLeftRate != leftRate) {
             closeLeftShapes(outerLeftPoint, innerLeftPoint, centerPoint);
             leftRate = newLeftRate;
