@@ -312,6 +312,7 @@ async def redis_connector(
     for task in pending:
         logging.debug(f"Cancelling task: {task}")
         task.cancel()
+    await redis_connection.close()
 
 
 @app.websocket("/ws/{channel}")
