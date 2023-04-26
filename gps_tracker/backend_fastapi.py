@@ -12,7 +12,6 @@ from fastapi.responses import RedirectResponse
 from typing import List, Union
 from geojson import FeatureCollection, Feature, LineString
 import aioredis
-import websockets.exceptions
 import json
 import os
 import asyncio
@@ -30,7 +29,6 @@ if "REDIS_HOST" in os.environ:
     redis_host = os.environ["REDIS_HOST"]
 else:
     redis_host = "127.0.0.1"
-redis_connection = aioredis.Redis(host=redis_host, decode_responses=True)
 
 app = FastAPI()
 app.mount("/static", StaticFiles(directory="../static"), name="static")
@@ -62,6 +60,7 @@ def split_track_segments(tracking_data, delta_t=600):
 
 
 async def _get_channel_data(channel):
+    redis_connection = aioredis.Redis(host=redis_host, decode_responses=True)
     pubsub = redis_connection.pubsub(ignore_subscribe_messages=True)
     await pubsub.subscribe(channel)
     while True:
@@ -82,12 +81,6 @@ async def root(request: Request):
         return RedirectResponse("/static/rotation_monitor.html")
     else:
         return RedirectResponse("/static/index.html")
-
-
-@app.get("/api/websocket_connections")
-async def get_websocket_connections():
-    websocket_connections = await redis_connection.get("ws_connections")
-    return websocket_connections
 
 
 @app.get("/api/current_pressure")
@@ -122,6 +115,7 @@ async def get_available_datasets(
     category: str = Query("*", regex="^[*a-z0-9]*$"),
     date: str = Query("*", max_length=8, regex="^[*0-9]*$"),
 ):
+    redis_connection = aioredis.Redis(host=redis_host, decode_responses=True)
     datasets = [
         key.replace(":", "_")
         async for key in redis_connection.scan_iter(f"{category}:*:{date}")
@@ -147,6 +141,7 @@ async def get_dataset(
     utc_min: Union[int, None] = None,
     utc_max: Union[int, None] = None,
 ):
+    redis_connection = aioredis.Redis(host=redis_host, decode_responses=True)
     reversed_data = await redis_connection.lrange(_id.replace("_", ":"), 0, -1)
     data = ",\n".join(reversed_data[::-1])
     return [
@@ -159,6 +154,7 @@ async def get_dataset(
 
 @app.get("/api/move_to_archive/{_id}")
 async def move_to_archive(_id):
+    redis_connection = aioredis.Redis(host=redis_host, decode_responses=True)
     key = _id.replace("_", ":")
     file_name = log_directory.joinpath(f"{_id}.json")
     reversed_data = await redis_connection.lrange(key, 0, -1)
@@ -195,6 +191,9 @@ async def get_geojson_dataset(
         with log_directory.joinpath(f"{_id}.json").open() as f:
             tracking_data = json.load(f)
     else:
+        redis_connection = aioredis.Redis(
+            host=redis_host, decode_responses=True
+        )
         reversed_data = await redis_connection.lrange(
             _id.replace("_", ":"), 0, -1
         )
@@ -280,6 +279,41 @@ async def get_geojson_dataset(
     return height_data
 
 
+async def redis_connector(
+    websocket: WebSocket, source_channel: str, target_channel: str
+):
+    async def consumer_handler(
+        redis_connection: aioredis.client.Redis,
+        websocket: WebSocket,
+        target_channel: str,
+    ):
+        async for message in websocket.iter_text():
+            await redis_connection.publish(target_channel, message)
+
+    async def producer_handler(
+        pubsub: aioredis.client.PubSub,
+        websocket: WebSocket,
+        source_channel: str,
+    ):
+        await pubsub.subscribe(source_channel)
+        async for message in pubsub.listen():
+            await websocket.send_text(message["data"])
+
+    redis_connection = aioredis.Redis(host=redis_host, decode_responses=True)
+    pubsub = redis_connection.pubsub(ignore_subscribe_messages=True)
+    consumer_task = consumer_handler(
+        redis_connection, websocket, target_channel
+    )
+    producer_task = producer_handler(pubsub, websocket, source_channel)
+    done, pending = await asyncio.wait(
+        [consumer_task, producer_task], return_when=asyncio.FIRST_COMPLETED
+    )
+    logging.debug(f"Done task: {done}")
+    for task in pending:
+        logging.debug(f"Cancelling task: {task}")
+        task.cancel()
+
+
 @app.websocket("/ws/{channel}")
 async def websocket_endpoint(websocket: WebSocket, channel: str):
     supported_channels = [
@@ -287,7 +321,6 @@ async def websocket_endpoint(websocket: WebSocket, channel: str):
         "gps",
         "barometer",
         "transfer_data",
-        "ws_connections",
         "imu_barometer",
         "rotation",
     ]
@@ -295,28 +328,9 @@ async def websocket_endpoint(websocket: WebSocket, channel: str):
     if channel not in supported_channels:
         await websocket.close(code=status.WS_1003_UNSUPPORTED_DATA)
         return
-    pubsub = redis_connection.pubsub(ignore_subscribe_messages=True)
-    await pubsub.subscribe(channel)
-    ws_connections = await redis_connection.incr("ws_connections")
-    await redis_connection.publish("ws_connections", ws_connections)
-    while True:
-        try:
-            message = await pubsub.get_message()
-            if message is not None:
-                await websocket.send_text(message["data"])
-            await asyncio.sleep(0.01)
-        except asyncio.TimeoutError:
-            pass
-        except websockets.exceptions.ConnectionClosedError:
-            ws_connections = await redis_connection.decr("ws_connections")
-            await redis_connection.publish("ws_connections", ws_connections)
-            logging.exception("abnormal closure of websocket connection.")
-            break
-        except websockets.exceptions.ConnectionClosedOK:
-            ws_connections = await redis_connection.decr("ws_connections")
-            await redis_connection.publish("ws_connections", ws_connections)
-            # normal closure with close code 1000
-            break
+    await redis_connector(
+        websocket, source_channel=channel, target_channel="client_feedback"
+    )
 
 
 @app.post("/api/calibrate_magnetometer")
