@@ -11,7 +11,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import RedirectResponse
 from typing import List, Union
 from geojson import FeatureCollection, Feature, LineString
-import aioredis
+from redis import asyncio as aioredis
 import json
 import os
 import asyncio
