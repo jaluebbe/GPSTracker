@@ -301,10 +301,12 @@ async def redis_connector(
 
     redis_connection = aioredis.Redis(host=redis_host, decode_responses=True)
     pubsub = redis_connection.pubsub(ignore_subscribe_messages=True)
-    consumer_task = consumer_handler(
-        redis_connection, websocket, target_channel
+    consumer_task = asyncio.create_task(
+        consumer_handler(redis_connection, websocket, target_channel)
     )
-    producer_task = producer_handler(pubsub, websocket, source_channel)
+    producer_task = asyncio.create_task(
+        producer_handler(pubsub, websocket, source_channel)
+    )
     done, pending = await asyncio.wait(
         [consumer_task, producer_task], return_when=asyncio.FIRST_COMPLETED
     )
