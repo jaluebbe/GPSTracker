@@ -11,7 +11,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import RedirectResponse
 from typing import List, Union
 from geojson import FeatureCollection, Feature, LineString
-import aioredis
+from redis import asyncio as aioredis
 import json
 import os
 import asyncio
@@ -312,6 +312,7 @@ async def redis_connector(
     for task in pending:
         logging.debug(f"Cancelling task: {task}")
         task.cancel()
+    await redis_connection.close()
 
 
 @app.websocket("/ws/{channel}")
