@@ -77,7 +77,7 @@ We created a "gpstracker" user with the required privileges.
 Now let's switch to this user (to go back to your user, type "exit"):
 ```
 sudo su - gpstracker  # or login as user gpstracker directly
-pip install fastapi geojson websockets pygeodesy aioredis redis uvicorn
+pip install fastapi geojson websockets pygeodesy redis uvicorn
 git clone https://github.com/Mayitzin/ahrs.git
 cd ahrs
 python setup.py install --user
