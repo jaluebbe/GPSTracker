@@ -439,10 +439,6 @@ function onLocationFound(e) {
     }
 }
 
-dataTransferInputForm.fileInput.onchange = () => {
-    importProject();
-}
-
 function onLocationError(e) {
     info.showText('No geolocation information available.');
 }
