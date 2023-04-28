@@ -59,10 +59,12 @@
         function disconnectGPS() {
             ws.close(1000);
             ws.onmessage = null;
+            noSleep.disable();
         };
         function resetGPSConnection() {
             disconnectGPS();
             connectGPS();
+            noSleep.enable();
         };
         function sendFeedback(content) {
             if (ws.readyState == ws.OPEN)
