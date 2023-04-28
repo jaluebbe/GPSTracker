@@ -6,7 +6,7 @@ import socket
 import json
 import datetime as dt
 import gps.aiogps
-import aioredis
+from redis import asyncio as aioredis
 import subprocess
 
 
@@ -49,6 +49,7 @@ async def consume_gpsd():
                 for _key in ("magtrack", "magvar"):
                     data.pop(_key, None)
                 if data["mode"] > 1:
+                    data["sensor"] = "gps"
                     await redis_connection.publish("gps", json.dumps(data))
                 if devices is not None and old_utc is not None:
                     _driver = devices[0]["driver"]
