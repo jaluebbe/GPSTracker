@@ -108,6 +108,9 @@ for item in _pubsub.listen():
         imu_barometer_history.append(json.loads(item["data"]))
     elif item["channel"] == "gps":
         data = json.loads(item["data"])
+        if data.get("sensor") != "gps":
+            # filter out test data
+            continue
         utc = data.get("utc")
         if utc is None:
             print("utc is None")
