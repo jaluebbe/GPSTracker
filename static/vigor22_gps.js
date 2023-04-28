@@ -324,6 +324,14 @@ function onLocationFound(e) {
         rightRate = 0;
         info.showText('' + Math.round(e.speed * 100) / 100 + '&nbsp;m/s is too slow.<br>0%');
         leftInfo.showText('0%');
+        sendFeedback({
+            right_rate: rightRate,
+            left_rate: leftRate,
+            longitude: e.longitude,
+            latitude: e.latitude,
+            speed: e.speed,
+            heading: e.heading
+        });
     } else {
         myMarker._tooltip.setContent('' + Math.round(e.speed * 100) / 100 + '&nbsp;m/s');
         let frontPoint = turf.destination(centerPoint, 5e-3, e.heading);
@@ -404,6 +412,14 @@ function onLocationFound(e) {
         }
         info.showText(newRightRate * 1e2 + '%');
         leftInfo.showText(newLeftRate * 1e2 + '%');
+        sendFeedback({
+            right_rate: newRightRate,
+            left_rate: newLeftRate,
+            longitude: e.longitude,
+            latitude: e.latitude,
+            speed: e.speed,
+            heading: e.heading
+        });
         if (newLeftRate != leftRate) {
             closeLeftShapes(outerLeftPoint, innerLeftPoint, centerPoint);
             leftRate = newLeftRate;

@@ -64,6 +64,10 @@
             disconnectGPS();
             connectGPS();
         };
+        function sendFeedback(content) {
+            if (ws.readyState == ws.OPEN)
+                ws.send(JSON.stringify(content));
+        };
         connectGPS();
     </script>
     
