@@ -294,7 +294,6 @@ function extendShape(shape, firstPoint, secondPoint) {
 }
 
 function onLocationFound(e) {
-    console.log(e);
     myMarker.setLatLng(e.latlng);
     myCircle.setLatLng(e.latlng);
     if (isFinite(e.accuracy)) {
