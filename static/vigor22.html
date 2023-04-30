@@ -10,6 +10,24 @@
     <link rel="stylesheet" href="leaflet/leaflet.css">
     <link rel="stylesheet" href="maplibre-gl/maplibre-gl.css">
     <link rel="stylesheet" href="gps_visualisation.css">
+    <style>
+        #statusGPS {
+            align-items: center;
+            display: flex;
+        }
+
+        #statusLightGPS {
+            background-color: #e7b416;
+            border-radius: 9999px;
+            height: 0.75rem;
+            width: 0.75rem;
+            margin-right: 0.5rem;
+        }
+
+        #statusLabelGPS {
+            flex: 1;
+        }
+    </style>
 </head>
 
 <body>
@@ -25,8 +43,14 @@
                     <button onclick="exportProject();" id="exportProjectButton" name="exportProjectButton">export</button>
                 </div>
                 <h4>GPS</h4>
-                <button onclick="disconnectGPS()">disconnect</button>
-                <button onclick="resetGPSConnection()">reset connection</button>
+                <div class="three-columns">
+                    <div id="statusGPS" class="status-light">
+                        <div id="statusLightGPS"></div>
+                        <div id="statusLabelGPS"></div>
+                    </div>
+                    <button onclick="disconnectGPS()">stop</button>
+                    <button onclick="resetGPSConnection()">reset</button>
+                </div>
             </div>
         </form>
     </template>
@@ -38,9 +62,19 @@
     <script src="gps_visualisation_offline.js"></script>
     <script src="vigor22_gps.js"></script>
     <script>
+        const statusColors = ["#e7b416", "#2dc937", "#db7b2b", "#cc3232"];
+        const statusLabels = ["connecting", "connected", "disconnecting", "disconnected"];
         var ws = undefined;
+
         function connectGPS() {
             ws = new WebSocket("ws://" + window.location.host + "/ws/gps");
+            displayStatusGPS();
+            ws.onopen = function(event) {
+                displayStatusGPS();
+            };
+            ws.onclose = function(event) {
+                displayStatusGPS();
+            };
             ws.onmessage = function(event) {
                 let message = JSON.parse(event.data);
                 let location = L.latLng(message.lat, message.lon);
@@ -56,20 +90,29 @@
                 onLocationFound(e);
             };
         };
+
+        function displayStatusGPS() {
+            statusLightGPS.style["background-color"] = statusColors[ws.readyState];
+            statusLabelGPS.innerHTML = statusLabels[ws.readyState];
+        }
+
         function disconnectGPS() {
             ws.close(1000);
             ws.onmessage = null;
             noSleep.disable();
         };
+
         function resetGPSConnection() {
             disconnectGPS();
             connectGPS();
             noSleep.enable();
         };
+
         function sendFeedback(content) {
             if (ws.readyState == ws.OPEN)
                 ws.send(JSON.stringify(content));
         };
+
         connectGPS();
     </script>
     
