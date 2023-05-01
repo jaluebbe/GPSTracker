@@ -50,3 +50,20 @@ body {
     grid-template-columns: auto auto;
     column-gap: 5px;
 }
+
+#statusGPS {
+    align-items: center;
+    display: flex;
+}
+
+#statusLightGPS {
+    background-color: #e7b416;
+    border-radius: 9999px;
+    height: 0.75rem;
+    width: 0.75rem;
+    margin-right: 0.5rem;
+}
+
+#statusLabelGPS {
+    flex: 1;
+}

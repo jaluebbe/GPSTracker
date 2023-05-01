@@ -10,24 +10,6 @@
     <link rel="stylesheet" href="leaflet/leaflet.css">
     <link rel="stylesheet" href="maplibre-gl/maplibre-gl.css">
     <link rel="stylesheet" href="gps_visualisation.css">
-    <style>
-        #statusGPS {
-            align-items: center;
-            display: flex;
-        }
-
-        #statusLightGPS {
-            background-color: #e7b416;
-            border-radius: 9999px;
-            height: 0.75rem;
-            width: 0.75rem;
-            margin-right: 0.5rem;
-        }
-
-        #statusLabelGPS {
-            flex: 1;
-        }
-    </style>
 </head>
 
 <body>
@@ -44,7 +26,7 @@
                 </div>
                 <h4>GPS</h4>
                 <div class="three-columns">
-                    <div id="statusGPS" class="status-light">
+                    <div id="statusGPS">
                         <div id="statusLightGPS"></div>
                         <div id="statusLabelGPS"></div>
                     </div>
@@ -94,7 +76,7 @@
         function displayStatusGPS() {
             statusLightGPS.style["background-color"] = statusColors[ws.readyState];
             statusLabelGPS.innerHTML = statusLabels[ws.readyState];
-        }
+        };
 
         function disconnectGPS() {
             ws.close(1000);
