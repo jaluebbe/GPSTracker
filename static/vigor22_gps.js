@@ -175,7 +175,7 @@ info.onAdd = function(map) {
     this._div = L.DomUtil.create('div', 'info');
     this._div.innerHTML =
         '<div class="grid-container">' +
-        '<div><span id="infoText">no data</span></div>' +
+        '<div><span id="infoText">no GPS data</span></div>' +
         '<div><span id="infoSpeedKm">0</span>&nbsp;km/h</div>' +
         '<div><span id="infoSpeed">0</span>&nbsp;m/s</div>' +
         '<div><img src="agricultural-fertilizer-icon.svg" height="12px">&nbsp;<span id="infoRate">0</span>%</div>'
@@ -387,6 +387,11 @@ function onLocationFound(e) {
         });
     } else {
         myMarker._tooltip.setContent('' + Math.round(e.speed * 100) / 100 + '&nbsp;m/s');
+        updateSpeed(e.speed);
+        if (Object.keys(settings).length === 0 && settings.constructor === Object) {
+            updateText('no project');
+            return;
+        };
         updateText('');
         let frontPoint = turf.destination(centerPoint, 5e-3, e.heading);
         let firstLeftQuartilePoint = turf.destination(centerPoint, settings.throwing_range * 0.25e-3, e.heading - 90);
@@ -464,7 +469,6 @@ function onLocationFound(e) {
         if (rightCoverage > 0.3) {
             newRightRate = 0;
         }
-        updateSpeed(e.speed);
         setRightRate(newRightRate);
         setLeftRate(newLeftRate);
         updateMissingArea();
