@@ -83,13 +83,19 @@ layerControl.addOverlay(planLayer, planLayerLabel);
 layerControl.addOverlay(protocolLayer, protocolLayerLabel);
 var settings = {};
 var noSleep = new NoSleep();
+var boundariesMultiPolygon = undefined;
+var boundariesArea = 0;
 
 function importProjectFileContent(fileContent) {
     let projectInput = JSON.parse(fileContent);
     boundariesLayer.addData(projectInput.boundaries);
+    boundariesMultiPolygon = turf.combine(boundariesLayer.toGeoJSON()).features[0];
+    boundariesArea = turf.area(boundariesMultiPolygon);
+    setTotalArea(boundariesArea);
     planLayer.addData(projectInput.plan);
     if (projectInput.protocol != null) {
         protocolLayer.addData(projectInput.protocol);
+        updateMissingArea();
     }
     Object.assign(settings, projectInput.settings);
     if (boundariesLayer.getBounds().isValid())
@@ -167,28 +173,71 @@ var info = L.control({
 });
 info.onAdd = function(map) {
     this._div = L.DomUtil.create('div', 'info');
-    this.showText('No geolocation information available.');
+    this._div.innerHTML =
+        '<div class="grid-container">' +
+        '<div><span id="infoText">no data</span></div>' +
+        '<div><span id="infoSpeedKm">0</span>&nbsp;km/h</div>' +
+        '<div><span id="infoSpeed">0</span>&nbsp;m/s</div>' +
+        '<div><img src="agricultural-fertilizer-icon.svg" height="12px">&nbsp;<span id="infoRate">0</span>%</div>'
+        '</div>';
     return this._div;
 };
-info.showText = function(infoText) {
-    this._div.innerHTML = infoText;
+
+function updateSpeed(speed) {
+    infoSpeed.innerHTML = speed.toFixed(1);
+    infoSpeedKm.innerHTML = (speed * 3.6).toFixed(1);
 };
-info.updateContent = function(heading, speed) {
-    this._div.innerHTML = "<div style='text-align: left;'>heading:&nbsp;" + Math.round(heading * 100) / 100 +
-        "&nbsp;deg<br>speed:&nbsp;" + Math.round(speed * 100) / 100 + "&nbsp;m/s</div>";
+
+function updateText(text) {
+    infoText.innerHTML = text;
 };
+
+function setRightRate(rate) {
+    infoRate.innerHTML = rate * 1e2;
+};
+
 info.addTo(map);
 var leftInfo = L.control({
     position: 'bottomleft'
 });
+
 leftInfo.onAdd = function(map) {
     this._div = L.DomUtil.create('div', 'info');
+    this._div.innerHTML =
+        '<div class="two-columns">' +
+        '&#x1F33E;<div><span id="leftInfoTotalArea">0</span>&nbsp;ha</div>' +
+        '&#x2611;<div><span id="leftInfoFinishedArea">0</span>&nbsp;ha</div>' +
+        '&#x2610;<div><span id="leftInfoMissingArea">0</span>&nbsp;ha</div>' +
+        '<img src="agricultural-fertilizer-icon.svg" height="12px"><div><span id="leftInfoRate">0</span>%</div>'
+        '</div>';
     return this._div;
 };
-leftInfo.showText = function(infoText) {
-    this._div.innerHTML = infoText;
+
+function setLeftRate(rate) {
+    leftInfoRate.innerHTML = rate * 1e2;
 };
+
+function setTotalArea(totalArea) {
+    leftInfoTotalArea.innerHTML = (totalArea * 0.0001).toFixed(2);
+};
+
+function setFinishedArea(finishedArea) {
+    leftInfoFinishedArea.innerHTML = (finishedArea * 0.0001).toFixed(2);
+};
+
+function setMissingArea(missingArea) {
+    leftInfoMissingArea.innerHTML = (missingArea * 0.0001).toFixed(2);
+};
+
+function updateMissingArea() {
+    let missingArea = turf.area(turf.difference(boundariesMultiPolygon,
+        turf.combine(protocolLayer.toGeoJSON()).features[0]));
+    setFinishedArea(boundariesArea - missingArea);
+    setMissingArea(missingArea);
+};
+
 leftInfo.addTo(map);
+
 var myMarker = L.marker([], {
     zIndexOffset: 1000
 });
@@ -313,16 +362,21 @@ function onLocationFound(e) {
     }
     var centerPoint = turf.point([e.longitude, e.latitude]);
     if (typeof e.heading === "undefined") {
-        info.showText('Speed and heading unavailable.');
+        updateText('Speed and heading unavailable.');
         myPolyline.setLatLngs([]);
+        myMarker._tooltip.setContent('');
     } else if (e.speed < settings.min_speed) {
+        myMarker._tooltip.setContent('' + Math.round(e.speed * 100) / 100 + '&nbsp;m/s');
         myPolyline.setLatLngs([]);
         closeLeftShapes();
         closeRightShapes();
         leftRate = 0;
         rightRate = 0;
-        info.showText('' + Math.round(e.speed * 100) / 100 + '&nbsp;m/s is too slow.<br>0%');
-        leftInfo.showText('0%');
+        updateText('too slow');
+        updateSpeed(e.speed);
+        updateMissingArea();
+        setLeftRate(leftRate);
+        setRightRate(rightRate);
         sendFeedback({
             right_rate: rightRate,
             left_rate: leftRate,
@@ -333,6 +387,7 @@ function onLocationFound(e) {
         });
     } else {
         myMarker._tooltip.setContent('' + Math.round(e.speed * 100) / 100 + '&nbsp;m/s');
+        updateText('');
         let frontPoint = turf.destination(centerPoint, 5e-3, e.heading);
         let firstLeftQuartilePoint = turf.destination(centerPoint, settings.throwing_range * 0.25e-3, e.heading - 90);
         let firstRightQuartilePoint = turf.destination(centerPoint, settings.throwing_range * 0.25e-3, e.heading + 90);
@@ -409,8 +464,10 @@ function onLocationFound(e) {
         if (rightCoverage > 0.3) {
             newRightRate = 0;
         }
-        info.showText(newRightRate * 1e2 + '%');
-        leftInfo.showText(newLeftRate * 1e2 + '%');
+        updateSpeed(e.speed);
+        setRightRate(newRightRate);
+        setLeftRate(newLeftRate);
+        updateMissingArea();
         sendFeedback({
             right_rate: newRightRate,
             left_rate: newLeftRate,
@@ -439,6 +496,6 @@ function onLocationFound(e) {
 }
 
 function onLocationError(e) {
-    info.showText('No geolocation information available.');
+    updateText('No geolocation information available.');
 }
 map.setView([47.32, 8.2], 16);

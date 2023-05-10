@@ -1,5 +1,5 @@
 var map = L.map('map', {
-    minZoom: 5,
+    minZoom: 0,
     maxZoom: 19
 });
 map.setView([49.0, 9.0], 7);
@@ -29,4 +29,5 @@ var layerControl = L.control.layers({}, {}, {
     collapsed: L.Browser.mobile, // hide on mobile devices
     position: 'topright'
 }).addTo(map);
-addOSMVectorLayer("osm_basic_style", "OSM Basic (offline)").addTo(map);
+addOSMVectorLayer("/api/vector/style/osm_basic", "OSM Basic (offline)").addTo(map);
+addOSMVectorLayer("/api/vector/style/osm_liberty", "OSM Liberty (offline)");
