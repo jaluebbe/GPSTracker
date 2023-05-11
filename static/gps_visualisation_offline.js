@@ -26,7 +26,7 @@ L.control.scale({
     'imperial': false
 }).addTo(map);
 var layerControl = L.control.layers({}, {}, {
-    collapsed: L.Browser.mobile, // hide on mobile devices
+    collapsed: true,
     position: 'topright'
 }).addTo(map);
 addOSMVectorLayer("/api/vector/style/osm_basic", "OSM Basic (offline)").addTo(map);
