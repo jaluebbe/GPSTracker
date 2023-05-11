@@ -230,8 +230,11 @@ function setMissingArea(missingArea) {
 };
 
 function updateMissingArea() {
-    let missingArea = turf.area(turf.difference(boundariesMultiPolygon,
-        turf.combine(protocolLayer.toGeoJSON()).features[0]));
+    let protocolMultiPolygon = turf.combine(protocolLayer.toGeoJSON()).features[0];
+    let missingArea = boundariesArea;
+    if (typeof protocolMultiPolygon !== "undefined") {
+        missingArea = turf.area(turf.difference(boundariesMultiPolygon, protocolMultiPolygon));
+    }
     setFinishedArea(boundariesArea - missingArea);
     setMissingArea(missingArea);
 };
