@@ -193,7 +193,7 @@ function updateText(text) {
 };
 
 function setRightRate(rate) {
-    infoRate.innerHTML = rate * 1e2;
+    infoRate.innerHTML = (rate * 1e2).toFixed(0);
 };
 
 info.addTo(map);
@@ -214,7 +214,7 @@ leftInfo.onAdd = function(map) {
 };
 
 function setLeftRate(rate) {
-    leftInfoRate.innerHTML = rate * 1e2;
+    leftInfoRate.innerHTML = (rate * 1e2).toFixed(0);
 };
 
 function setTotalArea(totalArea) {
