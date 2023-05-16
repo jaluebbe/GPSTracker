@@ -24,7 +24,7 @@
                     <button onclick="importProject();" id="importProjectButton" name="importProjectButton">import</button>
                     <button onclick="exportProject();" id="exportProjectButton" name="exportProjectButton">export</button>
                 </div>
-                <h4>&#x1F6F0;&nbsp;GPS</h4>
+                <h4><a onclick="importFakeData();">&#x1F6F0;</a>&nbsp;GPS</h4>
                 <div class="three-columns">
                     <div id="statusGPS">
                         <div id="statusLightGPS"></div>
@@ -47,6 +47,11 @@
         const statusColors = ["#e7b416", "#2dc937", "#db7b2b", "#cc3232"];
         const statusLabels = ["connecting", "connected", "disconnecting", "disconnected"];
         var ws = undefined;
+        var running = false;
+
+        function sleep(seconds) {
+            return new Promise((resolve) =>setTimeout(resolve, seconds * 1000));
+        }
 
         function connectGPS() {
             ws = new WebSocket("ws://" + window.location.host + "/ws/gps");
@@ -82,6 +87,7 @@
             ws.close(1000);
             ws.onmessage = null;
             noSleep.disable();
+            running = false;
         };
 
         function resetGPSConnection() {
@@ -93,6 +99,43 @@
         function sendFeedback(content) {
             if (ws.readyState == ws.OPEN)
                 ws.send(JSON.stringify(content));
+        };
+
+        async function processFakeData(fakeData) {
+            noSleep.enable();
+            running = true;
+            for (const message of fakeData) {
+                if (running == false)
+                    break;
+                let location = L.latLng(message.lat, message.lon);
+                let error = message.hdop * 15;
+                let e = {
+                    latlng: location,
+                    latitude: message.lat,
+                    longitude: message.lon,
+                    speed: message.speed,
+                    heading: message.track,
+                    accuracy: error
+                }
+                onLocationFound(e);
+                await sleep(1);
+            }
+            noSleep.disable();
+            running = false;
+        };
+
+        function importFakeData() {
+            let fileInput = dataTransferInputForm.fileInput;
+            if (ws.readyState != ws.CLOSED || fileInput.files.length != 1) {
+                return;
+            }
+            let fr = new FileReader();
+            fr.onload = function(fileData) {
+                let fakeData = JSON.parse(fileData.target.result);
+                processFakeData(fakeData);
+            };
+            fr.readAsText(fileInput.files[0]);
+            fileInput.value = "";
         };
 
         connectGPS();
