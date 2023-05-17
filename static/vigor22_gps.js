@@ -95,8 +95,8 @@ function importProjectFileContent(fileContent) {
     planLayer.addData(projectInput.plan);
     if (projectInput.protocol != null) {
         protocolLayer.addData(projectInput.protocol);
-        updateMissingArea();
     }
+    updateMissingArea();
     Object.assign(settings, projectInput.settings);
     if (boundariesLayer.getBounds().isValid())
         map.fitBounds(boundariesLayer.getBounds());
@@ -229,10 +229,20 @@ function setMissingArea(missingArea) {
     leftInfoMissingArea.innerHTML = (missingArea * 0.0001).toFixed(2);
 };
 
+function addFeature(features, feature) {
+    if (turf.area(feature) > 0)
+        features.push(feature);
+};
+
 function updateMissingArea() {
-    let protocolMultiPolygon = turf.combine(protocolLayer.toGeoJSON()).features[0];
+    let features = [].concat(protocolLayer.toGeoJSON().features);
+    addFeature(features, innerLeftPolygon.toGeoJSON());
+    addFeature(features, outerLeftPolygon.toGeoJSON());
+    addFeature(features, innerRightPolygon.toGeoJSON());
+    addFeature(features, outerRightPolygon.toGeoJSON());
+    let protocolMultiPolygon = turf.combine(turf.featureCollection(features)).features[0];
     let missingArea = boundariesArea;
-    if (typeof protocolMultiPolygon !== "undefined") {
+    if (typeof protocolMultiPolygon !== "undefined" && turf.area(protocolMultiPolygon) > 0) {
         missingArea = turf.area(turf.difference(boundariesMultiPolygon, protocolMultiPolygon));
     }
     setFinishedArea(boundariesArea - missingArea);
