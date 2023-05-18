@@ -104,6 +104,7 @@
         async function processFakeData(fakeData) {
             noSleep.enable();
             running = true;
+            let old_utc = null;
             for (const message of fakeData) {
                 if (running == false)
                     break;
@@ -117,8 +118,11 @@
                     heading: message.track,
                     accuracy: error
                 }
+                if (old_utc != null)
+                    // reduce larger time gaps to one minute.
+                    await sleep(Math.min(message.utc - old_utc, 60));
                 onLocationFound(e);
-                await sleep(1);
+                old_utc = message.utc;
             }
             noSleep.disable();
             running = false;
