@@ -48,6 +48,9 @@
         const statusLabels = ["connecting", "connected", "disconnecting", "disconnected"];
         var ws = undefined;
         var running = false;
+        const urlParams = new URLSearchParams(window.location.search);
+        const maxReplaySleep = (urlParams.has('limit') ? parseFloat(urlParams.get('limit')) : 5);
+        const replaySleepFactor = (urlParams.has('factor') ? parseFloat(urlParams.get('factor')) : 1);
 
         function sleep(seconds) {
             return new Promise((resolve) =>setTimeout(resolve, seconds * 1000));
@@ -119,8 +122,7 @@
                     accuracy: error
                 }
                 if (old_utc != null)
-                    // reduce larger time gaps to one minute.
-                    await sleep(Math.min(message.utc - old_utc, 60));
+                    await sleep(Math.min(replaySleepFactor * (message.utc - old_utc), maxReplaySleep));
                 onLocationFound(e);
                 old_utc = message.utc;
             }
