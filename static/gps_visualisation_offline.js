@@ -3,8 +3,8 @@ var map = L.map('map', {
     maxZoom: 19
 });
 map.setView([49.0, 9.0], 7);
-//map.attributionControl.addAttribution(
-//    '<a href="https://github.com/jaluebbe/GPSTracker">Source on GitHub</a>');
+map.attributionControl.addAttribution(
+    '<a href="https://github.com/jaluebbe/GPSTracker">Source on GitHub</a>');
 // add link to privacy statement
 //map.attributionControl.addAttribution(
 //    '<a href="static/datenschutz.html" target="_blank">Datenschutzerkl&auml;rung</a>');
@@ -29,5 +29,5 @@ var layerControl = L.control.layers({}, {}, {
     collapsed: true,
     position: 'topright'
 }).addTo(map);
-addOSMVectorLayer("/api/vector/style/osm_basic", "OSM Basic (offline)").addTo(map);
-addOSMVectorLayer("/api/vector/style/osm_liberty", "OSM Liberty (offline)");
+addOSMVectorLayer("/api/vector/style/osm_basic", "OSM Basic").addTo(map);
+addOSMVectorLayer("/api/vector/style/osm_liberty", "OSM Liberty");
