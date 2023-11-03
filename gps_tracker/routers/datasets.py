@@ -65,13 +65,23 @@ async def get_dataset(
     _id: str,
     utc_min: Union[int, None] = None,
     utc_max: Union[int, None] = None,
+    from_archive: bool = Query(False),
 ):
-    redis_connection = aioredis.Redis(host=redis_host, decode_responses=True)
-    reversed_data = await redis_connection.lrange(_id.replace("_", ":"), 0, -1)
-    data = ",\n".join(reversed_data[::-1])
+    if from_archive:
+        with log_directory.joinpath(f"{_id}.json").open() as f:
+            tracking_data = json.load(f)
+    else:
+        redis_connection = aioredis.Redis(
+            host=redis_host, decode_responses=True
+        )
+        reversed_data = await redis_connection.lrange(
+            _id.replace("_", ":"), 0, -1
+        )
+        data = ",\n".join(reversed_data[::-1])
+        tracking_data = json.loads(f"[{data}]\n")
     return [
         _row
-        for _row in json.loads(f"[{data}]\n")
+        for _row in tracking_data
         if not (utc_min is not None and _row["utc"] < utc_min)
         and not (utc_max is not None and _row["utc"] > utc_max)
     ]
