@@ -51,13 +51,23 @@ var boundariesLayer = L.geoJSON([], {
         });
     }
 }).addTo(map);
+function colourisePlan(rate) {
+    if (rate == 1)
+        return "#997a00";
+    else if (rate >= 0.8)
+        return "#ffcc00";
+    else if (rate >= 0.6)
+        return "#ffe066";
+    else
+        return "#fff5cc";
+}
 var planLayer = L.geoJSON([], {
     onEachFeature: onEachFeature,
     pane: 'plan',
     style: function(feature) {
         return styleShape(feature, {
-            fillColor: "#ffcc00",
-            fillOpacity: 0.15,
+            fillColor: colourisePlan(feature.properties.V22RATE),
+            fillOpacity: 0.3,
             weight: 1.5,
             color: "grey"
         });
