@@ -19,7 +19,7 @@ sudo systemctl unmask hostapd
 sudo systemctl disable hostapd
 sudo systemctl disable dnsmasq
 sudo useradd -m gpstracker
-sudo usermod -a -G i2c,video gpstracker
+sudo usermod -a -G i2c,video,gpio gpstracker
 sudo passwd gpstracker
 ```
 
