@@ -132,9 +132,10 @@
 
         function importFakeData() {
             let fileInput = dataTransferInputForm.fileInput;
-            if (ws.readyState != ws.CLOSED || fileInput.files.length != 1) {
+            if (fileInput.files.length != 1) {
                 return;
             }
+            ws.onmessage = null;
             let fr = new FileReader();
             fr.onload = function(fileData) {
                 let fakeData = JSON.parse(fileData.target.result);
