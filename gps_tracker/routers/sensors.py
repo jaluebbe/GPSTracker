@@ -5,7 +5,7 @@ import logging
 from typing import List
 import numpy as np
 from redis import asyncio as aioredis
-from fastapi import APIRouter, HTTPException, Request, Response, WebSocket
+from fastapi import APIRouter, HTTPException, Request, Response, WebSocket, status
 from ellipsoid_fit import ellipsoid_fit, data_regularize
 import gyr_calibration
 
