@@ -156,9 +156,27 @@
         var beeped = false;
         const spinTarget = document.getElementById('gyrCalibrationResult');
         var spinner = undefined;
+        var lastWarnSound = 0;
+
+        function processSpeedWarning(rpm) {
+            const timestamp = new Date() / 1e3;
+            let delay = 0;
+            if (soundOff.checked) {} else if (rpm >= 8 && timestamp - lastWarnSound > 3.6) {
+                lastWarnSound = timestamp;
+                delay = playNote('a1', 2, delay);
+                delay = playNote('d2', 2, delay);
+                delay = playNote('a1', 2, delay);
+                delay = playNote('d2', 2, delay);
+            } else if (rpm >= 6 && timestamp - lastWarnSound > 10) {
+                lastWarnSound = timestamp;
+                delay = playNote('c1', 4, delay);
+                delay = playNote('g1', 4, delay);
+            }
+        }
 
         function processMessage(message) {
             var delay = 0;
+            processSpeedWarning(message.rpm)
             gauge.set(message.rpm);
             rotations.innerHTML = message.rotations;
             compass_rotations.innerHTML = message.compass_rotations;
