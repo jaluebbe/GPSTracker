@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!venv/bin/python3
 import sys
 import redis
 import json
@@ -8,22 +8,20 @@ import pygeodesy
 from collections import deque
 from time import localtime, strftime, gmtime
 
-sys.path.append("/home/pi/GPSTracker")
-
+# Initialize Redis connection and pubsub
 redis_connection = redis.Redis(decode_responses=True)
+_pubsub = redis_connection.pubsub()
+_pubsub.subscribe("gps", "barometer", "imu", "imu_barometer")
+# Initialize deques for history
 pressure_history = deque(maxlen=50)
 imu_history = deque(maxlen=50)
 imu_barometer_history = deque(maxlen=50)
-_pubsub = redis_connection.pubsub()
-_pubsub.subscribe("gps", "barometer", "imu", "imu_barometer")
-old_location = None
-old_utc = None
-old_pressure = None
-max_pause = 30
-max_dist = 8
-status_threshold = 1
-h_uere_no_dgps = 15.0
-dump_ignore_keys = [
+# Constants
+MAX_PAUSE = 30
+MAX_DIST = 8
+STATUS_THRESHOLD = 1
+H_UERE_NO_DGPS = 15.0
+DUMP_IGNORE_KEYS = [
     "map_height",
     "map_type",
     "mode",
@@ -70,6 +68,10 @@ dump_ignore_keys = [
     "imu_baro_vertical_speed",
     "imu_baro_altitude",
 ]
+# Global variables for tracking state
+old_location = None
+old_utc = None
+old_pressure = None
 
 
 def get_cpu_temperature():
@@ -77,8 +79,8 @@ def get_cpu_temperature():
     return float(res.replace("temp=", "").replace("'C\n", ""))
 
 
-# calculate the distance between two gps coordinates:
 def get_distance(location1, location2):
+    """Calculate the distance between two GPS coordinates."""
     lat1 = location1[0]
     lon1 = location1[1]
     lat2 = location2[0]
@@ -93,83 +95,82 @@ def get_distance(location1, location2):
     return distance
 
 
+def update_data_with_history(data, history, key_prefix):
+    """Update data with the most recent entry from history."""
+    while history:
+        history_data = history.popleft()
+        if history_data[f"{key_prefix}_utc"] > data["utc"] - 0.08:
+            data.update(history_data)
+            break
+
+
+def process_gps_data(data):
+    """Process GPS data and update Redis."""
+    global old_location, old_utc, old_pressure
+
+    utc = data.get("utc")
+    if utc is None:
+        print("utc is None")
+        return
+
+    location = (data["lat"], data["lon"])
+    update_data_with_history(data, pressure_history, "p")
+    update_data_with_history(data, imu_history, "i")
+    update_data_with_history(data, imu_barometer_history, "p")
+
+    hdop = data.get("hdop")
+    error = hdop * H_UERE_NO_DGPS if hdop is not None else None
+
+    if old_location is None:
+        status = 3
+    elif get_distance(old_location, location) > MAX_DIST:
+        status = 2
+    elif utc - MAX_PAUSE > old_utc:
+        status = 1
+    elif (
+        data.get("pressure") is not None
+        and np.abs(np.diff([data["pressure"], old_pressure])) > 10
+    ):
+        status = 4
+    else:
+        status = 0
+
+    if status >= STATUS_THRESHOLD:
+        old_utc = utc
+        old_location = location
+        old_pressure = data.get("pressure")
+
+        if location is not None:
+            utm = pygeodesy.toUtm(*location)
+            data["utm"] = utm.toStr()
+            data["mgrs"] = utm.toMgrs().toStr()
+
+        data["rpi_temperature"] = get_cpu_temperature()
+        data["my_status"] = status
+        data["localtime"] = strftime("%Y-%m-%d %H:%M:%S", localtime())
+        data["pos_error"] = (
+            round(error, 2) if error is not None else float("nan")
+        )
+
+        redis_connection.publish("transfer_data", json.dumps(data))
+
+        for key in DUMP_IGNORE_KEYS:
+            data.pop(key, None)
+
+        key = f"tracking:{data['hostname']}:{strftime('%Y%m%d', gmtime())}"
+        redis_connection.lpush(key, json.dumps(data))
+
+
 for item in _pubsub.listen():
-    if not item["type"] == "message":
+    if item["type"] != "message":
         continue
-    if item["channel"] == "barometer":
-        baro_data = json.loads(item["data"])
-        if baro_data.get("imu_barometer_available") != True:
-            pressure_history.append(baro_data)
-    elif item["channel"] == "imu":
-        imu_data = json.loads(item["data"])
-        if imu_data.get("imu_barometer_available") != True:
-            imu_history.append(imu_data)
-    elif item["channel"] == "imu_barometer":
-        imu_barometer_history.append(json.loads(item["data"]))
-    elif item["channel"] == "gps":
-        data = json.loads(item["data"])
-        if data.get("sensor") != "gps":
-            # filter out test data
-            continue
-        utc = data.get("utc")
-        if utc is None:
-            print("utc is None")
-            continue
-        location = (data["lat"], data["lon"])
-        while len(pressure_history) > 0:
-            pressure_data = pressure_history.popleft()
-            if pressure_data["p_utc"] > data["utc"] - 0.08:
-                data.update(pressure_data)
-                break
-        while len(imu_history) > 0:
-            imu_data = imu_history.popleft()
-            if imu_data["i_utc"] > data["utc"] - 0.08:
-                data.update(imu_data)
-                break
-        while len(imu_barometer_history) > 0:
-            imu_barometer_data = imu_barometer_history.popleft()
-            if imu_barometer_data["p_utc"] > data["utc"] - 0.08:
-                data.update(imu_barometer_data)
-                break
-        hdop = data.get("hdop")
-        if hdop is not None:
-            error = hdop * h_uere_no_dgps
-        else:
-            error = None
-        if old_location is None:
-            status = 3
-        elif get_distance(old_location, location) > max_dist:
-            status = 2
-        elif utc - max_pause > old_utc:
-            status = 1
-        elif (
-            data.get("pressure") is not None
-            and np.abs(np.diff([data["pressure"], old_pressure])) > 10
-        ):
-            status = 4
-        else:
-            status = 0
-        if status >= status_threshold:
-            old_utc = utc
-            old_location = location
-            old_pressure = data.get("pressure")
-            gps_altitude = data.get("alt")
-            if location is not None:
-                utm = pygeodesy.toUtm(*location)
-                data["utm"] = utm.toStr()
-                data["mgrs"] = utm.toMgrs().toStr()
-            data["rpi_temperature"] = get_cpu_temperature()
-            data["my_status"] = status
-            data["localtime"] = str(strftime("%Y-%m-%d %H:%M:%S", localtime()))
-            if error is not None:
-                data["pos_error"] = round(error, 2)
-            else:
-                data["pos_error"] = float("nan")
-            redis_connection.publish("transfer_data", json.dumps(data))
-            if dump_ignore_keys is not None:
-                for key in dump_ignore_keys:
-                    data.pop(key, None)
-            key = "tracking:{}:{}".format(
-                data["hostname"], strftime("%Y%m%d", gmtime())
-            )
-            redis_connection.lpush(key, json.dumps(data))
+    channel = item["channel"]
+    data = json.loads(item["data"])
+    if channel == "barometer" and not data.get("imu_barometer_available"):
+        pressure_history.append(data)
+    elif channel == "imu" and not data.get("imu_barometer_available"):
+        imu_history.append(data)
+    elif channel == "imu_barometer":
+        imu_barometer_history.append(data)
+    elif channel == "gps" and data.get("sensor") == "gps":
+        process_gps_data(data)
