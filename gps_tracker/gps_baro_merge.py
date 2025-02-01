@@ -1,5 +1,4 @@
 #!venv/bin/python3
-import sys
 import redis
 import json
 import os
