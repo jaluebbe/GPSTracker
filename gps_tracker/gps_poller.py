@@ -1,9 +1,9 @@
-#!/usr/bin/env python3
+#!venv/bin/python3
 import signal
 import sys
 import asyncio
 import socket
-import json
+import orjson
 import datetime as dt
 import gps.aiogps
 from redis import asyncio as aioredis
@@ -50,7 +50,7 @@ async def consume_gpsd():
                     data.pop(_key, None)
                 if data["mode"] > 1:
                     data["sensor"] = "gps"
-                    await redis_connection.publish("gps", json.dumps(data))
+                    await redis_connection.publish("gps", orjson.dumps(data))
                 if devices is not None and old_utc is not None:
                     _driver = devices[0]["driver"]
                     _path = devices[0]["path"]
@@ -75,7 +75,7 @@ async def consume_gpsd():
             elif msg["class"] == "DEVICES":
                 devices = msg["devices"]
                 await redis_connection.set(
-                    "gps_devices", json.dumps(msg["devices"])
+                    "gps_devices", orjson.dumps(msg["devices"])
                 )
 
 
