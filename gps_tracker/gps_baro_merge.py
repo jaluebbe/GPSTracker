@@ -3,10 +3,10 @@ import sys
 import redis
 import json
 import os
-import numpy as np
 import pygeodesy
 from collections import deque
 from time import localtime, strftime, gmtime
+from math import sin, cos, acos, radians
 
 # Initialize Redis connection and pubsub
 redis_connection = redis.Redis(decode_responses=True)
@@ -81,16 +81,10 @@ def get_cpu_temperature():
 
 def get_distance(location1, location2):
     """Calculate the distance between two GPS coordinates."""
-    lat1 = location1[0]
-    lon1 = location1[1]
-    lat2 = location2[0]
-    lon2 = location2[1]
-    deg_rad = 2 * np.pi / 360
-    distance = 6.370e6 * np.arccos(
-        np.sin(lat1 * deg_rad) * np.sin(lat2 * deg_rad)
-        + np.cos(lat1 * deg_rad)
-        * np.cos(lat2 * deg_rad)
-        * np.cos((lon2 - lon1) * deg_rad)
+    lat1, lon1 = map(radians, location1)
+    lat2, lon2 = map(radians, location2)
+    distance = 6.370e6 * acos(
+        sin(lat1) * sin(lat2) + cos(lat1) * cos(lat2) * cos(lon2 - lon1)
     )
     return distance
 
@@ -129,7 +123,7 @@ def process_gps_data(data):
         status = 1
     elif (
         data.get("pressure") is not None
-        and np.abs(np.diff([data["pressure"], old_pressure])) > 10
+        and abs(data["pressure"] - old_pressure) > 10
     ):
         status = 4
     else:
