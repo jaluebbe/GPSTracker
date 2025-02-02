@@ -1,4 +1,4 @@
-import json
+#!venv/bin/python3
 from pathlib import Path
 from fastapi import FastAPI, Request
 from fastapi.staticfiles import StaticFiles
@@ -31,3 +31,9 @@ async def root(request: Request):
         return RedirectResponse("/static/rotation_monitor.html")
     else:
         return RedirectResponse("/static/index.html")
+
+
+if __name__ == "__main__":
+    import uvicorn
+
+    uvicorn.run(app, host="0.0.0.0", port=8080)

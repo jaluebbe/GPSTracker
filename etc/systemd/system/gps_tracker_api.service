@@ -6,8 +6,8 @@ After=redis-server.service
 Type=simple
 User=gpstracker
 Restart=on-failure
-ExecStart=/home/gpstracker/.local/bin/uvicorn backend_fastapi:app --host 0.0.0.0 --port 8080
 WorkingDirectory=/home/gpstracker/GPSTracker/gps_tracker
+ExecStart=/home/gpstracker/GPSTracker/gps_tracker/backend_raspi.py
 
 [Install]
 WantedBy=multi-user.target
