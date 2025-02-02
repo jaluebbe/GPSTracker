@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # code is partly based on https://github.com/ControlEverythingCommunity/BMP280
-import smbus
+import smbus2
 import time
 import json
 import socket
@@ -21,7 +21,7 @@ class Bmp280:
 
     def initialize_sensor(self):
         # Get I2C bus
-        self.bus = smbus.SMBus(1)
+        self.bus = smbus2.SMBus(1)
         chip_id = self.bus.read_byte_data(self.i2c_address, 0xD0)
         if chip_id != 0x58:
             raise DeviceNotFound("No BMP280 found.")

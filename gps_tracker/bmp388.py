@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # code is partly based on https://github.com/ozzmaker/BerryIMU
-import smbus
+import smbus2
 import time
 import json
 import socket
@@ -77,7 +77,7 @@ class Bmp388:
 
     def initialize_sensor(self):
         # Get I2C bus
-        self.bus = smbus.SMBus(1)
+        self.bus = smbus2.SMBus(1)
         # Load calibration values.
         if self._read_byte(BMP388_REG_ADD_WIA) == BMP388_REG_VAL_WIA:
             u8RegData = self._read_byte(BMP388_REG_ADD_STATUS)

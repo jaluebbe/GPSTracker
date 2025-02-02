@@ -7,6 +7,7 @@ Type=simple
 User=gpstracker
 Restart=on-failure
 ExecStart=/home/gpstracker/GPSTracker/gps_tracker/barometer_poller.py
+WorkingDirectory=/home/gpstracker/GPSTracker/gps_tracker
 
 [Install]
 WantedBy=multi-user.target
