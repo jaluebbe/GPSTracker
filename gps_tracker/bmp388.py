@@ -1,10 +1,7 @@
-#!/usr/bin/env python3
 # code is partly based on https://github.com/ozzmaker/BerryIMU
 import smbus2
 import time
-import json
 import socket
-import redis
 
 I2C_ADD_BMP388_AD0_LOW = 0x76
 I2C_ADD_BMP388_AD0_HIGH = 0x77

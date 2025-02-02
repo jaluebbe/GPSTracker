@@ -1,10 +1,7 @@
-#!/usr/bin/env python3
 # code is partly based on https://github.com/ControlEverythingCommunity/BME280
 import smbus2
 import time
-import json
 import socket
-import redis
 
 
 class DeviceNotFound(IOError):
