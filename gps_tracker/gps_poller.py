@@ -65,7 +65,7 @@ async def consume_gpsd():
                             # set the data rate of the GPS to 2Hz
                             # (up to 10Hz is possible)
                             subprocess.check_output(
-                                ["gpsctl", "-c", "0.5", "-s", "115200"],
+                                ["gpsctl", "-c", "0.5", "-s", "115200", "-n"],
                                 timeout=8,
                             )
                             config_counter += 1
