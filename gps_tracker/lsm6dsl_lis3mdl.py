@@ -1,6 +1,5 @@
-#!/usr/bin/env python3
 # code is partly based on https://github.com/ozzmaker/BerryIMU
-import smbus
+import smbus2
 import time
 import struct
 from lsm import Lsm
@@ -9,8 +8,10 @@ ACC_ADDRESS = 0x6A
 GYR_ADDRESS = 0x6A
 MAG_ADDRESS = 0x1C
 
+OUT_T_L_G = 0x20
 OUT_X_L_G = 0x22
 OUT_X_L_A = 0x28
+OUT_T_L_M = 0x2E
 OUT_X_L_M = 0x28
 
 WHO_AM_I = 0x0F
@@ -41,8 +42,10 @@ class Lsm6dsl_Lis3mdl(Lsm):
         self.ACCEL_SCALE = ACCEL_SCALE
         self.GYR_SCALE = GYR_SCALE
         self.MAG_SCALE = MAG_SCALE
+        self.OUT_T_L_G = OUT_T_L_G
         self.OUT_X_L_A = OUT_X_L_A
         self.OUT_X_L_G = OUT_X_L_G
+        self.OUT_T_L_M = OUT_T_L_M
         self.OUT_X_L_M = OUT_X_L_M
         self.ACC_ADDRESS = ACC_ADDRESS
         self.GYR_ADDRESS = GYR_ADDRESS
@@ -53,7 +56,7 @@ class Lsm6dsl_Lis3mdl(Lsm):
 
     def initialize_sensor(self):
         # Get I2C bus
-        self.bus = smbus.SMBus(1)
+        self.bus = smbus2.SMBus(1)
         whoami_gyr = self.bus.read_byte_data(self.GYR_ADDRESS, WHO_AM_I)
         if whoami_gyr != 0x6A:
             raise DeviceNotFound("LSM6DSL not found")
@@ -96,3 +99,13 @@ class Lsm6dsl_Lis3mdl(Lsm):
         raw = self.bus.read_i2c_block_data(self.MAG_ADDRESS, self.OUT_X_L_M, 6)
         self.raw_magnetometer = list(struct.unpack("<hhh", bytearray(raw)))
         return self.raw_magnetometer
+
+    def update_raw_gyro_temperature(self):
+        raw = self.bus.read_i2c_block_data(self.GYR_ADDRESS, self.OUT_T_L_G, 2)
+        self.raw_temperature = list(struct.unpack("<h", bytearray(raw)))
+        return self.raw_temperature
+
+    def update_raw_magnetometer_temperature(self):
+        raw = self.bus.read_i2c_block_data(self.MAG_ADDRESS, self.OUT_T_L_M, 2)
+        self.raw_temperature = list(struct.unpack("<h", bytearray(raw)))
+        return self.raw_temperature
