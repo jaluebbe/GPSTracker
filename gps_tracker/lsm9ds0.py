@@ -1,6 +1,5 @@
-#!/usr/bin/env python3
 # code is partly based on https://github.com/ozzmaker/BerryIMU
-import smbus
+import smbus2
 import time
 import struct
 from lsm import Lsm
@@ -50,7 +49,7 @@ class Lsm9ds0(Lsm):
 
     def initialize_sensor(self):
         # Get I2C bus
-        self.bus = smbus.SMBus(1)
+        self.bus = smbus2.SMBus(1)
         whoami_mag = self.bus.read_byte_data(self.MAG_ADDRESS, WHO_AM_I)
         whoami_gyr = self.bus.read_byte_data(self.GYR_ADDRESS, WHO_AM_I)
         if whoami_mag != 0x49 or whoami_gyr != 0xD4:

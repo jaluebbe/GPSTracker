@@ -1,6 +1,5 @@
-#!/usr/bin/env python3
 # code is partly based on https://github.com/pimoroni/enviro-phat/blob/master/library/envirophat/lsm303d.py
-import smbus
+import smbus2
 import time
 import struct
 from lsm import Lsm
@@ -43,7 +42,7 @@ class Lsm303d(Lsm):
 
     def initialize_sensor(self):
         # Get I2C bus
-        self.bus = smbus.SMBus(1)
+        self.bus = smbus2.SMBus(1)
         whoami = self.bus.read_byte_data(self.ACC_ADDRESS, WHO_AM_I)
         if whoami == 0x49:
             self.bus.write_byte_data(self.ACC_ADDRESS, CTRL_REG1, 0x57)
