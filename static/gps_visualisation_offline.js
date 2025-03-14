@@ -50,7 +50,6 @@ fetch('/api/vector/regions')
             const mapRegion = data[0];
             addOSMVectorLayer("osm_basic", mapRegion, "OSM Basic").addTo(map);
             addOSMVectorLayer("osm_bright", mapRegion, "OSM Bright");
-            addOSMVectorLayer("osm_liberty", mapRegion, "OSM Liberty");
             addOSMVectorLayer("osm_positron", mapRegion, "OSM Positron");
             map.setView([52.2775, 8.0415], 12);
         } else {
