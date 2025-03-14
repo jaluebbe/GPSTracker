@@ -20,7 +20,7 @@
       "type": "raster"
     }
   },
-  "sprite": "http://localhost/static/sprites/osm-liberty",
+  "sprite": "http://localhost/static/sprites/osm_liberty",
   "glyphs": "fonts/{fontstack}/{range}.pbf",
   "layers": [
     {
@@ -108,6 +108,36 @@
         "fill-color": "rgba(224, 236, 236, 1)",
         "fill-opacity": 0.8
       }
+    },
+    {
+      "id": "landcover_wetland",
+      "type": "fill",
+      "source": "openmaptiles",
+      "source-layer": "landcover",
+      "minzoom": 12,
+      "filter": ["all", ["==", "class", "wetland"]],
+      "paint": {
+        "fill-antialias": true,
+        "fill-opacity": 0.8,
+        "fill-pattern": "wetland_bg_11",
+        "fill-translate-anchor": "map"
+      }
+    },
+    {
+      "id": "landuse_pitch",
+      "type": "fill",
+      "source": "openmaptiles",
+      "source-layer": "landuse",
+      "filter": ["==", "class", "pitch"],
+      "paint": {"fill-color": "#DEE3CD"}
+    },
+    {
+      "id": "landuse_track",
+      "type": "fill",
+      "source": "openmaptiles",
+      "source-layer": "landuse",
+      "filter": ["==", "class", "track"],
+      "paint": {"fill-color": "#DEE3CD"}
     },
     {
       "id": "landuse_cemetery",
@@ -899,7 +929,7 @@
       "type": "symbol",
       "source": "openmaptiles",
       "source-layer": "transportation",
-      "minzoom": 15,
+      "minzoom": 16,
       "filter": ["==", "oneway", 1],
       "layout": {"icon-image": "arrow", "symbol-placement": "line"}
     },
@@ -908,7 +938,7 @@
       "type": "symbol",
       "source": "openmaptiles",
       "source-layer": "transportation",
-      "minzoom": 15,
+      "minzoom": 16,
       "filter": ["==", "oneway", -1],
       "layout": {
         "icon-image": "arrow",
@@ -1319,6 +1349,20 @@
       }
     },
     {
+      "id": "housenumber",
+      "type": "symbol",
+      "source": "openmaptiles",
+      "source-layer": "housenumber",
+      "minzoom": 17,
+      "filter": ["==", "$type", "Point"],
+      "layout": {
+        "text-field": "{housenumber}",
+        "text-font": ["Roboto Regular"],
+        "text-size": 10
+      },
+      "paint": {"text-color": "#666"}
+    },
+    {
       "id": "water_name_line",
       "type": "symbol",
       "source": "openmaptiles",
@@ -1363,7 +1407,13 @@
       "minzoom": 16,
       "filter": ["all", ["==", "$type", "Point"], [">=", "rank", 20]],
       "layout": {
-        "icon-image": "{class}_11",
+        "icon-image": [
+          "match",
+          ["get", "subclass"],
+          ["florist", "furniture", "soccer", "tennis"],
+          ["get", "subclass"],
+          ["get", "class"]
+        ],
         "text-anchor": "top",
         "text-field": "{name}",
         "text-font": ["Roboto Condensed Italic"],
@@ -1391,7 +1441,13 @@
         ["<", "rank", 20]
       ],
       "layout": {
-        "icon-image": "{class}_11",
+        "icon-image": [
+          "match",
+          ["get", "subclass"],
+          ["florist", "furniture", "soccer", "tennis"],
+          ["get", "subclass"],
+          ["get", "class"]
+        ],
         "text-anchor": "top",
         "text-field": "{name}",
         "text-font": ["Roboto Condensed Italic"],
@@ -1419,7 +1475,13 @@
         ["<", "rank", 7]
       ],
       "layout": {
-        "icon-image": "{class}_11",
+        "icon-image": [
+          "match",
+          ["get", "subclass"],
+          ["florist", "furniture", "soccer", "tennis"],
+          ["get", "subclass"],
+          ["get", "class"]
+        ],
         "text-anchor": "top",
         "text-field": "{name}",
         "text-font": ["Roboto Condensed Italic"],
@@ -1441,7 +1503,7 @@
       "source-layer": "poi",
       "filter": ["all", ["in", "class", "bus", "rail", "airport"]],
       "layout": {
-        "icon-image": "{class}_11",
+        "icon-image": "{class}",
         "text-anchor": "left",
         "text-field": "{name_en}",
         "text-font": ["Roboto Condensed Italic"],

@@ -85,7 +85,6 @@ cd
 git clone https://github.com/jaluebbe/GPSTracker.git
 cd GPSTracker
 git clone https://github.com/klokantech/klokantech-gl-fonts fonts
-ln -s ../../osm_offline.mbtiles gps_tracker/osm_offline.mbtiles
 ln -s ../../GEBCO_2022.nc gps_tracker/GEBCO_2022.nc
 ```
 
