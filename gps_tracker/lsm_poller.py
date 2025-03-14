@@ -25,7 +25,7 @@ def get_lsm_sensor():
 
 def main():
     redis_connection = redis.Redis()
-    interval = 0.08
+    interval = 0.05
     sensor = get_lsm_sensor()
     if sensor is None:
         print("No IMU sensor found. Exiting.")

@@ -78,10 +78,6 @@ Now let's switch to this user (to go back to your user, type "exit"):
 ```
 sudo su - gpstracker  # or login as user gpstracker directly
 pip install fastapi geojson websockets pygeodesy redis uvicorn
-git clone https://github.com/Mayitzin/ahrs.git
-cd ahrs
-python setup.py install --user
-cd
 git clone https://github.com/jaluebbe/GPSTracker.git
 cd GPSTracker
 git clone https://github.com/klokantech/klokantech-gl-fonts fonts

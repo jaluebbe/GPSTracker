@@ -9,3 +9,4 @@ python-multipart
 h5py
 scipy
 pygeodesy
+imufusion
