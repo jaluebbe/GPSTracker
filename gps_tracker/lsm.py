@@ -80,6 +80,10 @@ class Lsm:
         """returns angular velocity as [x, y, z] in units of rad/s."""
         return np.deg2rad(self.get_gyro_deg())
 
+    def get_raw_gyro_temperature(self):
+        self.update_raw_gyro_temperature()
+        return self.raw_temperature
+
     def get_sensor_data(
         self, sensor_fusion: bool = True, use_mag: bool = False
     ) -> dict:
@@ -111,6 +115,7 @@ class Lsm:
             gyr = self.get_gyro()
             sensor_data["raw_gyro"] = self.raw_gyro
             sensor_data["gyro"] = np.round(gyr, 3).tolist()
+            sensor_data["raw_gyro_temp"] = self.get_raw_gyro_temperature()
 
         if self.ACC_ADDRESS is not None and sensor_fusion:
             if self.old_timestamp is not None and self.GYR_ADDRESS is not None:
