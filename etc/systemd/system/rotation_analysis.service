@@ -6,6 +6,7 @@ After=redis-server.service
 Type=simple
 User=gpstracker
 Restart=on-failure
+WorkingDirectory=/home/gpstracker/GPSTracker/gps_tracker
 ExecStart=/home/gpstracker/GPSTracker/gps_tracker/rotation_analysis.py
 
 [Install]

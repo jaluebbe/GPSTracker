@@ -5,6 +5,7 @@ Description=jumper wifi off service
 Type=simple
 User=pi
 Restart=on-failure
+WorkingDirectory=/home/gpstracker/GPSTracker/gps_tracker
 ExecStart=/home/gpstracker/GPSTracker/gps_tracker/jumper_wifi_off.py
 
 [Install]
