@@ -14,7 +14,8 @@ sudo apt update
 sudo apt upgrade
 sudo apt dist-upgrade
 sudo apt install chrony gpsd git redis-server python3-gps python3-pip \
-python3-scipy python3-smbus python3-h5py hostapd dnsmasq anacron
+python3-scipy python3-smbus python3-h5py hostapd dnsmasq anacron \
+python3-venv libopenblas-dev
 sudo systemctl unmask hostapd
 sudo systemctl disable hostapd
 sudo systemctl disable dnsmasq
@@ -81,7 +82,19 @@ pip install fastapi geojson websockets pygeodesy redis uvicorn
 git clone https://github.com/jaluebbe/GPSTracker.git
 cd GPSTracker
 git clone https://github.com/klokantech/klokantech-gl-fonts fonts
+python -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
 ln -s ../../GEBCO_2022.nc gps_tracker/GEBCO_2022.nc
+```
+```
+Check your Python version by calling:
+```
+python --version
+```
+If your version is below 3.10 call:
+```
+pip install eval_type_backport
 ```
 
 ### Test Python scripts
