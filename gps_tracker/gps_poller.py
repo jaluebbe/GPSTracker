@@ -3,11 +3,22 @@ import signal
 import sys
 import asyncio
 import socket
+from pathlib import Path
 import orjson
 import datetime as dt
 import gps.aiogps
 from redis import asyncio as aioredis
 import subprocess
+
+
+def fixed_baudrate_set():
+    gpsd_config = Path("/etc/default/gpsd")
+    if gpsd_config.exists():
+        with gpsd_config.open("r") as config_file:
+            for line in config_file:
+                if line.startswith("GPSD_OPTIONS=") and "-s" in line:
+                    return True
+    return False
 
 
 def sigterm_handler(signal, frame):
@@ -16,7 +27,8 @@ def sigterm_handler(signal, frame):
     sys.exit(0)
 
 
-signal.signal(signal.SIGTERM, sigterm_handler)
+if not fixed_baudrate_set():
+    signal.signal(signal.SIGTERM, sigterm_handler)
 
 
 async def consume_gpsd():
@@ -33,6 +45,7 @@ async def consume_gpsd():
                 sky_info = {
                     key: msg[key]
                     for key in ("hdop", "vdop", "pdop", "uSat", "nSat")
+                    if key in msg
                 }
             elif msg["class"] == "TPV":
                 if "time" not in msg:
@@ -54,8 +67,8 @@ async def consume_gpsd():
                     data["sensor"] = "gps"
                     await redis_connection.publish("gps", orjson.dumps(data))
                 if devices and old_utc:
-                    _driver = devices[0]["driver"]
-                    _path = devices[0]["path"]
+                    _driver = devices[0].get("driver")
+                    _path = devices[0].get("path")
                     if (
                         config_counter <= 5
                         and _path == "/dev/serial0"
