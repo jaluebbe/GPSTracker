@@ -1,14 +1,17 @@
 #!venv/bin/python3
-import signal
-import sys
 import asyncio
-import socket
-from pathlib import Path
-import orjson
 import datetime as dt
-import gps.aiogps
-from redis import asyncio as aioredis
+import logging
+import signal
+import socket
 import subprocess
+import sys
+from pathlib import Path
+
+import orjson
+from redis import asyncio as aioredis
+
+import gps.aiogps
 
 
 def fixed_baudrate_set():
@@ -21,9 +24,17 @@ def fixed_baudrate_set():
     return False
 
 
+def call_gpsctl(args, timeout=12):
+    try:
+        cmd = ["gpsctl"] + args.split()
+        subprocess.check_output(cmd, timeout=timeout)
+    except subprocess.TimeoutExpired:
+        logging.exception(f"The gpsctl command timed out.")
+
+
 def sigterm_handler(signal, frame):
     # setting the baud rate of the GPS back to standard before rebooting.
-    subprocess.check_output(["gpsctl", "-s", "9600"], timeout=8)
+    call_gpsctl("-s 9600")
     sys.exit(0)
 
 
@@ -77,16 +88,11 @@ async def consume_gpsd():
                         if _driver == "u-blox":
                             # set the data rate of the GPS to 2Hz
                             # (up to 10Hz is possible)
-                            subprocess.check_output(
-                                ["gpsctl", "-c", "0.5", "-s", "115200", "-n"],
-                                timeout=8,
-                            )
+                            call_gpsctl("-c 0.5 -s 115200 -n")
                             config_counter += 1
                         elif _driver == "MTK-3301":
                             # set the data rate of the GPS to 2Hz
-                            subprocess.check_output(
-                                ["gpsctl", "-c", "0.5"], timeout=8
-                            )
+                            call_gpsctl("-c 0.5")
                             config_counter += 1
                 old_utc = data["utc"]
             elif msg["class"] == "DEVICES":
