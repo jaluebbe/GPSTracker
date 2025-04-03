@@ -33,7 +33,7 @@ USBAUTO="true"
 ```
 Or if the GPS device is attached via serial port, set the following parameters in /etc/default/gpsd :
 ```
-DEVICES="/dev/serial0"
+DEVICES="/dev/ttyS0"
 GPSD_OPTIONS="-n"
 USBAUTO="false"
 ```
