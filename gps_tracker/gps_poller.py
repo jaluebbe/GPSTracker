@@ -82,7 +82,7 @@ async def consume_gpsd():
                     _path = devices[0].get("path")
                     if (
                         config_counter <= 5
-                        and _path == "/dev/serial0"
+                        and _path == "/dev/ttyS0"
                         and data["utc"] - old_utc > 0.7
                     ):
                         if _driver == "u-blox":
