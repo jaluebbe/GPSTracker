@@ -179,6 +179,14 @@ Or, instead of the shutdown button, a switch to disable WiFi may be connected
 to GND and GPIO21. The setup is similar to the installation of the shutdown
 button but the service file is called "jumper_wifi_off.service" instead.
 
+Optional, if you are using a qwiic pHat with a button on GPIO17:
+```
+sudo cp /home/gpstracker/GPSTracker/etc/systemd/system/button_reboot_shutdown.service /etc/systemd/system/
+```
+Edit /etc/systemd/system/button_reboot_shutdown.service if your username is not "pi" with /home/pi.
+```
+sudo systemctl enable button_reboot_shutdown.service
+```
 
 Optional, if data of an attached pressure sensor should be logged
 separately even if no GPS data is available:
