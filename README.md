@@ -37,6 +37,8 @@ DEVICES="/dev/ttyS0"
 GPSD_OPTIONS="-n"
 USBAUTO="false"
 ```
+Some Raspberry Pi OS installations may require you to use /dev/serial0 as
+device instead.
 
 You have to enable the serial port via
 ```
