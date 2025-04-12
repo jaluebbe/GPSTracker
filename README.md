@@ -184,6 +184,8 @@ Edit /etc/systemd/system/button_reboot_shutdown.service if your username is not 
 ```
 sudo systemctl enable button_reboot_shutdown.service
 ```
+Pressing the button for more than 5s triggers a shutdown. After 2s a reboot is triggered.
+A short press enables Wi-Fi. Anything longer but below 2s diables Wi-Fi.
 
 Optional, if data of an attached pressure sensor should be logged
 separately even if no GPS data is available:
