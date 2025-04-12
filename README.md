@@ -13,12 +13,8 @@ These steps are performed under your username with sudo privileges:
 sudo apt update
 sudo apt upgrade
 sudo apt dist-upgrade
-sudo apt install chrony gpsd git redis-server python3-gps python3-pip \
-python3-scipy python3-smbus python3-h5py hostapd dnsmasq anacron \
-python3-venv libopenblas-dev
-sudo systemctl unmask hostapd
-sudo systemctl disable hostapd
-sudo systemctl disable dnsmasq
+sudo apt install chrony gpsd git redis-server python3-fastapi python3-uvicorn \
+python3-numpy python3-scipy python3-smbus python3-h5py anacron python3-venv
 sudo useradd -m gpstracker
 sudo usermod -a -G i2c,video,gpio gpstracker
 sudo passwd gpstracker
@@ -37,8 +33,7 @@ DEVICES="/dev/ttyS0"
 GPSD_OPTIONS="-n"
 USBAUTO="false"
 ```
-Some Raspberry Pi OS installations may require you to use /dev/serial0 as
-device instead.
+Some Raspberry Pi OS installations may require you to use /dev/serial0 as device instead.
 
 You have to enable the serial port via
 ```
@@ -84,7 +79,7 @@ pip install fastapi geojson websockets pygeodesy redis uvicorn
 git clone https://github.com/jaluebbe/GPSTracker.git
 cd GPSTracker
 git clone https://github.com/klokantech/klokantech-gl-fonts fonts
-python -m venv venv
+python -m venv --system-site-packages venv
 source venv/bin/activate
 pip install -r requirements.txt
 ln -s ../../GEBCO_2022.nc gps_tracker/GEBCO_2022.nc
@@ -222,46 +217,37 @@ sudo cp /home/gpstracker/GPSTracker/etc/cron.daily/archive_data /etc/cron.daily/
 ```
 You may access the API via [ip or hostname]:8080/docs .
 
-If you would like to create a redirection from port 80 to port 8080,
-you should add the following line to /etc/rc.local :
+### Setup port forwarding
+If you would avoid to add :8080 to the hostname of the device you can create
+a port forwarding from port 80 to 8080.
+At first try if it works by calling
 ```
-/usr/sbin/iptables -A PREROUTING -t nat -i wlan0 -p tcp --dport 80 -j REDIRECT --to-port 8080
+sudo /usr/sbin/iptables -A PREROUTING -t nat -i wlan0 -p tcp --dport 80 -j REDIRECT --to-port 8080
 ```
+and test if you could call the device without the port number.
+Then call:
+```
+sudo apt install iptables-persistent
+```
+During installation, you will be prompted to save the current iptables rules. Select Yes.
+If you change your rules after the installation of iptables-persistent just
+call:
+```
+sudo netfilter-persistent save
 
 ### WLAN access point setup
-Follow this [Tutorial](https://www.raspberryconnect.com/projects/65-raspberrypi-hotspot-accesspoints/158-raspberry-pi-auto-wifi-hotspot-switch-direct-connection)
-(some steps are already completed).
+The hotspot setup for systems running bookwork mainly follows this
+[Tutorial](https://www.raspberryconnect.com/projects/65-raspberrypi-hotspot-accesspoints/203-automated-switching-accesspoint-wifi-network).
+Type the following commands and set name and password for your hotspot
+network.
+You may also add multiple known networks where the device should join as a
+client.
 ```
-sudo cp /home/gpstracker/GPSTracker/etc/dnsmasq.conf /etc/dnsmasq.conf
-sudo cp /home/gpstracker/GPSTracker/etc/hostapd/hostapd.conf /etc/hostapd/hostapd.conf
+curl "https://www.raspberryconnect.com/images/scripts/AccessPopup.tar.gz" -o AccessPopup.tar.gz
+tar -xvf ./AccessPopup.tar.gz
+cd AccessPopup
+sudo ./installconfig.sh
 ```
-Edit /etc/hostapd/hostapd.conf and set "my-wifi-network" as well as "my-wifi-password" to your needs.
-Attention, these are the login credentials for clients connecting to your
-access point on the Raspberry Pi.
-
-Finally, set up the service to perform the choice of the connection during startup:
-```
-sudo cp /home/gpstracker/GPSTracker/usr/bin/autohotspot /usr/bin/
-sudo cp /home/gpstracker/GPSTracker/etc/systemd/system/autohotspot.service /etc/systemd/system/
-sudo systemctl enable autohotspot.service
-```
-If your known WiFi networks are not available, the hotspot will be created instead.
-When connected to this hotspot, you may type http://gps which will be forwarded to the main page.
-A shortcut to the vigor22 demo is available via http://vigor22 .
-Further shortcuts may be created by modification of dnsmasq.conf and backend_fastapi.py .
-
-### Optimisation of power consumption
-To reduce the power consumption on a Raspberry Pi Zero you should switch to the legacy graphics driver via
-```
-sudo raspi-config
-```
-and select "Advanced" -> "GL driver" -> "Legacy" -> "Ok".
-Now you could disable HDMI by calling:
-```
-/usr/bin/tvservice -o
-```
-You may setup your /etc/rc.local in a similar way as the file in /home/gpstracker/GPSTracker/etc/rc.local
-to switch of HDMI at boot.
 
 ## GPS track visualisation
 TODO
