@@ -82,7 +82,6 @@ git clone https://github.com/klokantech/klokantech-gl-fonts fonts
 python -m venv --system-site-packages venv
 source venv/bin/activate
 pip install -r requirements.txt
-ln -s ../../GEBCO_2022.nc gps_tracker/GEBCO_2022.nc
 ```
 ```
 Check your Python version by calling:
@@ -208,8 +207,8 @@ Finally, copy the output.mbtiles to the following location on your Raspberry Pi:
 /home/gpstracker/osm_offline.mbtiles
 ```
 
-Download the [GEBCO_2022 grid](https://www.gebco.net/data_and_products/gridded_bathymetry_data/)
-in netCDF format and copy GEBCO_2022.nc to the user folder of "gpstracker".
+Download the [GEBCO_2024 grid](https://www.gebco.net/data_and_products/gridded_bathymetry_data/)
+in netCDF format and copy GEBCO_2024.nc to the user folder of "gpstracker".
 
 ### Local web API
 ```

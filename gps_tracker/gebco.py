@@ -1,6 +1,7 @@
 import h5py
 import os
 import json
+from pathlib import Path
 import numpy as np
 
 NCOLS = 86400
@@ -8,6 +9,8 @@ NROWS = 43200
 CELLSIZE = 1.0 / 240
 XLLCENTER = -180.0
 YLLCENTER = -90.0
+
+GEBCO_PATH = Path("../../GEBCO_2024.nc")
 
 
 def get_index_from_latitude(lat):
@@ -28,10 +31,10 @@ def get_lon_from_index(j):
 
 class Gebco:
     attribution_url = (
-        "https://www.gebco.net/data_and_products/"
-        "gridded_bathymetry_data/gebco_2022/"
+        "https://www.gebco.net/data-products-gridded-bathymetry-data/"
+        "gebco2024-grid"
     )
-    attribution_name = "GEBCO_2022 Grid"
+    attribution_name = "GEBCO_2024 Grid"
     attribution = '&copy <a href="{}">{}</a>'.format(
         attribution_url, attribution_name
     )
@@ -42,17 +45,10 @@ class Gebco:
     old_val = None
     h5_file = None
 
-    def __init__(self, path=None, file_name=None):
-        pwd = os.path.dirname(os.path.abspath(__file__))
-        if path is None:
-            path = pwd
-        if file_name is None:
-            file_name = "GEBCO_2022.nc"
-        file = os.path.join(path, file_name)
-        if os.path.isfile(file):
-            self.h5_file = h5py.File(file, "r")
-        else:
-            raise FileNotFoundError(file)
+    def __init__(self, file_path: Path = GEBCO_PATH):
+        if not file_path.is_file():
+            raise FileNotFoundError(file_path)
+        self.h5_file = h5py.File(file_path, "r")
 
     def get_height(self, lat, lon):
         if not (-90 <= lat <= 90 and -180 <= lon <= 180):
