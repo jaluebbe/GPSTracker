@@ -22,13 +22,17 @@ def shutdown():
 
 
 def wifi_off():
-    syslog("Disabling Wi-Fi")
-    os.system("sudo nmcli radio wifi off")
+    wifi_status = os.popen("nmcli radio wifi").read().strip()
+    if wifi_status == "enabled":
+        syslog("Disabling Wi-Fi")
+        os.system("sudo nmcli radio wifi off")
 
 
 def wifi_on():
-    syslog("Enabling Wi-Fi")
-    os.system("sudo nmcli radio wifi on")
+    wifi_status = os.popen("nmcli radio wifi").read().strip()
+    if wifi_status != "enabled":
+        syslog("Enabling Wi-Fi")
+        os.system("sudo nmcli radio wifi on")
 
 
 if __name__ == "__main__":
