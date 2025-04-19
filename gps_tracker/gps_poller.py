@@ -1,22 +1,45 @@
 #!venv/bin/python3
-import signal
-import sys
 import asyncio
-import socket
-import orjson
 import datetime as dt
-import gps.aiogps
-from redis import asyncio as aioredis
+import logging
+import signal
+import socket
 import subprocess
+import sys
+from pathlib import Path
+
+import orjson
+from redis import asyncio as aioredis
+
+import gps.aiogps
+
+
+def fixed_baudrate_set():
+    gpsd_config = Path("/etc/default/gpsd")
+    if gpsd_config.exists():
+        with gpsd_config.open("r") as config_file:
+            for line in config_file:
+                if line.startswith("GPSD_OPTIONS=") and "-s" in line:
+                    return True
+    return False
+
+
+def call_gpsctl(args, timeout=12):
+    try:
+        cmd = ["gpsctl"] + args.split()
+        subprocess.check_output(cmd, timeout=timeout)
+    except subprocess.TimeoutExpired:
+        logging.exception(f"The gpsctl command timed out.")
 
 
 def sigterm_handler(signal, frame):
     # setting the baud rate of the GPS back to standard before rebooting.
-    subprocess.check_output(["gpsctl", "-s", "9600"], timeout=8)
+    call_gpsctl("-s 9600")
     sys.exit(0)
 
 
-signal.signal(signal.SIGTERM, sigterm_handler)
+if not fixed_baudrate_set():
+    signal.signal(signal.SIGTERM, sigterm_handler)
 
 
 async def consume_gpsd():
@@ -33,6 +56,7 @@ async def consume_gpsd():
                 sky_info = {
                     key: msg[key]
                     for key in ("hdop", "vdop", "pdop", "uSat", "nSat")
+                    if key in msg
                 }
             elif msg["class"] == "TPV":
                 if "time" not in msg:
@@ -54,26 +78,21 @@ async def consume_gpsd():
                     data["sensor"] = "gps"
                     await redis_connection.publish("gps", orjson.dumps(data))
                 if devices and old_utc:
-                    _driver = devices[0]["driver"]
-                    _path = devices[0]["path"]
+                    _driver = devices[0].get("driver")
+                    _path = devices[0].get("path")
                     if (
                         config_counter <= 5
-                        and _path == "/dev/serial0"
+                        and _path in ("/dev/ttyS0", "/dev/serial0")
                         and data["utc"] - old_utc > 0.7
                     ):
                         if _driver == "u-blox":
                             # set the data rate of the GPS to 2Hz
                             # (up to 10Hz is possible)
-                            subprocess.check_output(
-                                ["gpsctl", "-c", "0.5", "-s", "115200", "-n"],
-                                timeout=8,
-                            )
+                            call_gpsctl("-c 0.5 -s 115200 -n")
                             config_counter += 1
                         elif _driver == "MTK-3301":
                             # set the data rate of the GPS to 2Hz
-                            subprocess.check_output(
-                                ["gpsctl", "-c", "0.5"], timeout=8
-                            )
+                            call_gpsctl("-c 0.5")
                             config_counter += 1
                 old_utc = data["utc"]
             elif msg["class"] == "DEVICES":

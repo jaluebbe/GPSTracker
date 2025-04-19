@@ -11,6 +11,7 @@ GYR_ADDRESS = 0x6A
 OUT_X_L_M = 0x08
 OUT_X_L_A = 0x28
 OUT_X_L_G = 0x28
+OUT_T_L_XM = 0x05
 
 WHO_AM_I = 0x0F
 
@@ -26,6 +27,7 @@ ACCEL_SCALE = 6.1e-5  # +/- 2g full scale
 MAG_SCALE = 8.0e-6  # +/- 0.2 mT full scale
 GYR_SCALE = 70e-3  # +/- 2000 dps full scale
 
+
 class DeviceNotFound(IOError):
     pass
 
@@ -40,6 +42,7 @@ class Lsm9ds0(Lsm):
         self.OUT_X_L_A = OUT_X_L_A
         self.OUT_X_L_M = OUT_X_L_M
         self.OUT_X_L_G = OUT_X_L_G
+        self.OUT_T_L_XM = OUT_T_L_XM
         self.MAG_ADDRESS = MAG_ADDRESS
         self.ACC_ADDRESS = ACC_ADDRESS
         self.GYR_ADDRESS = GYR_ADDRESS
@@ -77,8 +80,8 @@ class Lsm9ds0(Lsm):
         time.sleep(0.5)
 
     def update_raw_acceleration(self):
-        # in order to read multiple bytes the high bit of the sub address must be
-        # asserted so we |0x80 to enable register auto-increment
+        # in order to read multiple bytes the high bit of the sub address must
+        # be asserted so we | 0x80 to enable register auto-increment
         raw = self.bus.read_i2c_block_data(
             self.ACC_ADDRESS, self.OUT_X_L_A | 0x80, 6
         )
@@ -98,3 +101,12 @@ class Lsm9ds0(Lsm):
         )
         self.raw_gyro = list(struct.unpack("<hhh", bytearray(raw)))
         return self.raw_gyro
+
+    def update_raw_temperature(self):
+        raw = self.bus.read_i2c_block_data(
+            self.MAG_ADDRESS, self.OUT_T_L_XM | 0x80, 2)
+        self.raw_temperature = list(struct.unpack("<h", bytearray(raw)))
+        return self.raw_temperature
+
+    def update_raw_gyro_temperature(self):
+        return self.update_raw_temperature()

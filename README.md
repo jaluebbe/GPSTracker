@@ -13,11 +13,8 @@ These steps are performed under your username with sudo privileges:
 sudo apt update
 sudo apt upgrade
 sudo apt dist-upgrade
-sudo apt install chrony gpsd git redis-server python3-gps python3-pip \
-python3-scipy python3-smbus python3-h5py hostapd dnsmasq anacron
-sudo systemctl unmask hostapd
-sudo systemctl disable hostapd
-sudo systemctl disable dnsmasq
+sudo apt install chrony gpsd git redis-server python3-fastapi python3-uvicorn \
+python3-numpy python3-scipy python3-smbus python3-h5py anacron python3-venv
 sudo useradd -m gpstracker
 sudo usermod -a -G i2c,video,gpio gpstracker
 sudo passwd gpstracker
@@ -32,10 +29,11 @@ USBAUTO="true"
 ```
 Or if the GPS device is attached via serial port, set the following parameters in /etc/default/gpsd :
 ```
-DEVICES="/dev/serial0"
+DEVICES="/dev/ttyS0"
 GPSD_OPTIONS="-n"
 USBAUTO="false"
 ```
+Some Raspberry Pi OS installations may require you to use /dev/serial0 as device instead.
 
 You have to enable the serial port via
 ```
@@ -78,15 +76,21 @@ Now let's switch to this user (to go back to your user, type "exit"):
 ```
 sudo su - gpstracker  # or login as user gpstracker directly
 pip install fastapi geojson websockets pygeodesy redis uvicorn
-git clone https://github.com/Mayitzin/ahrs.git
-cd ahrs
-python setup.py install --user
-cd
 git clone https://github.com/jaluebbe/GPSTracker.git
 cd GPSTracker
 git clone https://github.com/klokantech/klokantech-gl-fonts fonts
-ln -s ../../osm_offline.mbtiles gps_tracker/osm_offline.mbtiles
-ln -s ../../GEBCO_2022.nc gps_tracker/GEBCO_2022.nc
+python -m venv --system-site-packages venv
+source venv/bin/activate
+pip install -r requirements.txt
+```
+```
+Check your Python version by calling:
+```
+python --version
+```
+If your version is below 3.10 call:
+```
+pip install eval_type_backport
 ```
 
 ### Test Python scripts
@@ -171,6 +175,16 @@ Or, instead of the shutdown button, a switch to disable WiFi may be connected
 to GND and GPIO21. The setup is similar to the installation of the shutdown
 button but the service file is called "jumper_wifi_off.service" instead.
 
+Optional, if you are using a qwiic pHat with a button on GPIO17:
+```
+sudo cp /home/gpstracker/GPSTracker/etc/systemd/system/button_reboot_shutdown.service /etc/systemd/system/
+```
+Edit /etc/systemd/system/button_reboot_shutdown.service if your username is not "pi" with /home/pi.
+```
+sudo systemctl enable button_reboot_shutdown.service
+```
+Pressing the button for more than 5s triggers a shutdown. After 2s a reboot is triggered.
+A short press enables Wi-Fi. Anything longer but below 2s diables Wi-Fi.
 
 Optional, if data of an attached pressure sensor should be logged
 separately even if no GPS data is available:
@@ -193,8 +207,8 @@ Finally, copy the output.mbtiles to the following location on your Raspberry Pi:
 /home/gpstracker/osm_offline.mbtiles
 ```
 
-Download the [GEBCO_2022 grid](https://www.gebco.net/data_and_products/gridded_bathymetry_data/)
-in netCDF format and copy GEBCO_2022.nc to the user folder of "gpstracker".
+Download the [GEBCO_2024 grid](https://www.gebco.net/data_and_products/gridded_bathymetry_data/)
+in netCDF format and copy GEBCO_2024.nc to the user folder of "gpstracker".
 
 ### Local web API
 ```
@@ -204,46 +218,37 @@ sudo cp /home/gpstracker/GPSTracker/etc/cron.daily/archive_data /etc/cron.daily/
 ```
 You may access the API via [ip or hostname]:8080/docs .
 
-If you would like to create a redirection from port 80 to port 8080,
-you should add the following line to /etc/rc.local :
+### Setup port forwarding
+If you would avoid to add :8080 to the hostname of the device you can create
+a port forwarding from port 80 to 8080.
+At first try if it works by calling
 ```
-/usr/sbin/iptables -A PREROUTING -t nat -i wlan0 -p tcp --dport 80 -j REDIRECT --to-port 8080
+sudo /usr/sbin/iptables -A PREROUTING -t nat -i wlan0 -p tcp --dport 80 -j REDIRECT --to-port 8080
 ```
+and test if you could call the device without the port number.
+Then call:
+```
+sudo apt install iptables-persistent
+```
+During installation, you will be prompted to save the current iptables rules. Select Yes.
+If you change your rules after the installation of iptables-persistent just
+call:
+```
+sudo netfilter-persistent save
 
 ### WLAN access point setup
-Follow this [Tutorial](https://www.raspberryconnect.com/projects/65-raspberrypi-hotspot-accesspoints/158-raspberry-pi-auto-wifi-hotspot-switch-direct-connection)
-(some steps are already completed).
+The hotspot setup for systems running bookwork mainly follows this
+[Tutorial](https://www.raspberryconnect.com/projects/65-raspberrypi-hotspot-accesspoints/203-automated-switching-accesspoint-wifi-network).
+Type the following commands and set name and password for your hotspot
+network.
+You may also add multiple known networks where the device should join as a
+client.
 ```
-sudo cp /home/gpstracker/GPSTracker/etc/dnsmasq.conf /etc/dnsmasq.conf
-sudo cp /home/gpstracker/GPSTracker/etc/hostapd/hostapd.conf /etc/hostapd/hostapd.conf
+curl "https://www.raspberryconnect.com/images/scripts/AccessPopup.tar.gz" -o AccessPopup.tar.gz
+tar -xvf ./AccessPopup.tar.gz
+cd AccessPopup
+sudo ./installconfig.sh
 ```
-Edit /etc/hostapd/hostapd.conf and set "my-wifi-network" as well as "my-wifi-password" to your needs.
-Attention, these are the login credentials for clients connecting to your
-access point on the Raspberry Pi.
-
-Finally, set up the service to perform the choice of the connection during startup:
-```
-sudo cp /home/gpstracker/GPSTracker/usr/bin/autohotspot /usr/bin/
-sudo cp /home/gpstracker/GPSTracker/etc/systemd/system/autohotspot.service /etc/systemd/system/
-sudo systemctl enable autohotspot.service
-```
-If your known WiFi networks are not available, the hotspot will be created instead.
-When connected to this hotspot, you may type http://gps which will be forwarded to the main page.
-A shortcut to the vigor22 demo is available via http://vigor22 .
-Further shortcuts may be created by modification of dnsmasq.conf and backend_fastapi.py .
-
-### Optimisation of power consumption
-To reduce the power consumption on a Raspberry Pi Zero you should switch to the legacy graphics driver via
-```
-sudo raspi-config
-```
-and select "Advanced" -> "GL driver" -> "Legacy" -> "Ok".
-Now you could disable HDMI by calling:
-```
-/usr/bin/tvservice -o
-```
-You may setup your /etc/rc.local in a similar way as the file in /home/gpstracker/GPSTracker/etc/rc.local
-to switch of HDMI at boot.
 
 ## GPS track visualisation
 TODO

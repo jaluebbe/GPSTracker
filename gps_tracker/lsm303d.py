@@ -17,6 +17,7 @@ CTRL_REG6 = 0x25
 CTRL_REG7 = 0x26
 OUT_X_L_A = 0x28
 OUT_X_L_M = 0x08
+OUT_T_L = 0x05
 
 ACCEL_SCALE = 6.1e-5  # +/- 2g full scale
 MAG_SCALE = 8.0e-6  # +/- 0.2 mT full scale
@@ -34,6 +35,7 @@ class Lsm303d(Lsm):
         self.MAG_SCALE = MAG_SCALE
         self.OUT_X_L_A = OUT_X_L_A
         self.OUT_X_L_M = OUT_X_L_M
+        self.OUT_T_L = OUT_T_L
         self.ACC_ADDRESS = ACC_ADDRESS
         self.MAG_ADDRESS = MAG_ADDRESS
         self.initialize_sensor()
@@ -49,7 +51,7 @@ class Lsm303d(Lsm):
             self.bus.write_byte_data(self.ACC_ADDRESS, CTRL_REG2, 0xC0)
             self.bus.write_byte_data(self.ACC_ADDRESS, CTRL_REG3, 0x00)
             self.bus.write_byte_data(self.ACC_ADDRESS, CTRL_REG4, 0x00)
-            self.bus.write_byte_data(self.ACC_ADDRESS, CTRL_REG5, 0x10)
+            self.bus.write_byte_data(self.ACC_ADDRESS, CTRL_REG5, 0x90)
             self.bus.write_byte_data(self.ACC_ADDRESS, CTRL_REG6, 0x00)
             self.bus.write_byte_data(self.ACC_ADDRESS, CTRL_REG7, 0x00)
         else:
@@ -57,8 +59,8 @@ class Lsm303d(Lsm):
         time.sleep(0.5)
 
     def update_raw_acceleration(self):
-        # in order to read multiple bytes the high bit of the sub address must be
-        # asserted so we |0x80 to enable register auto-increment
+        # in order to read multiple bytes the high bit of the sub address must
+        # be asserted so we | 0x80 to enable register auto-increment
         raw = self.bus.read_i2c_block_data(
             self.ACC_ADDRESS, self.OUT_X_L_A | 0x80, 6
         )
@@ -78,3 +80,9 @@ class Lsm303d(Lsm):
         )
         self.raw_gyro = list(struct.unpack("<hhh", bytearray(raw)))
         return self.raw_gyro
+
+    def update_raw_temperature(self):
+        raw = self.bus.read_i2c_block_data(
+            self.MAG_ADDRESS, self.OUT_T_L | 0x80, 2)
+        self.raw_temperature = list(struct.unpack("<h", bytearray(raw)))
+        return self.raw_temperature

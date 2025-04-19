@@ -15,6 +15,7 @@
       "url": "../api/vector/metadata/osm_offline.json"
     }
   },
+  "sprite": "http://localhost/static/sprites/osm_basic",
   "glyphs": "../fonts/{fontstack}/{range}.pbf",
   "layers": [
     {
@@ -235,7 +236,7 @@
         "text-font": ["KlokanTech Noto Sans Regular"],
         "text-size": 10
       },
-      "paint": {"text-color": "rgba(212, 177, 146, 1)"}
+      "paint": {"text-color": "#666"}
     },
     {
       "id": "road_area_pier",

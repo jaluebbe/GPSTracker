@@ -5,6 +5,7 @@ Description=button shutdown service
 Type=simple
 User=pi
 Restart=on-failure
+WorkingDirectory=/home/gpstracker/GPSTracker/gps_tracker
 ExecStart=/home/gpstracker/GPSTracker/gps_tracker/button_shutdown.py
 
 [Install]

@@ -1,12 +1,10 @@
-#!/usr/bin/env python3
 # code is partly based on https://github.com/pimoroni/enviro-phat/blob/master/library/envirophat/lsm303d.py
 import time
 import json
 import socket
 import redis
 import numpy as np
-from ahrs.filters import Tilt, Madgwick
-from ahrs import Quaternion, RAD2DEG, DEG2RAD
+import imufusion
 
 
 class Lsm:
@@ -21,7 +19,7 @@ class Lsm:
         self.raw_gyro = None
         self.old_q = None
         self.old_timestamp = None
-        self.madgwick = Madgwick()
+        self.gyro_offset = imufusion.Offset(25)
         self.calibration = {
             "g": 9.80665,
             "g_offset": [0.0, 0.0, 0.0],
@@ -69,15 +67,22 @@ class Lsm:
         rotated = np.array(self.calibration["rotation"]).dot(corrected)
         return rotated * scaling
 
-    def get_gyro(self):
-        """returns angular velocity as [x, y, z] in units of rad/s."""
+    def get_gyro_deg(self):
+        """returns angular velocity as [x, y, z] in units of deg/s."""
         self.update_raw_gyro()
         data = np.array(self.raw_gyro)
         calibration = self.calibration
-        scaling = self.GYR_SCALE * DEG2RAD
         corrected = data - calibration["g_offset"]
         rotated = np.array(self.calibration["rotation"]).dot(corrected)
-        return rotated * scaling
+        return self.gyro_offset.update(rotated * self.GYR_SCALE)
+
+    def get_gyro(self):
+        """returns angular velocity as [x, y, z] in units of rad/s."""
+        return np.deg2rad(self.get_gyro_deg())
+
+    def get_raw_gyro_temperature(self):
+        self.update_raw_gyro_temperature()
+        return self.raw_temperature
 
     def get_sensor_data(
         self, sensor_fusion: bool = True, use_mag: bool = False
@@ -110,44 +115,44 @@ class Lsm:
             gyr = self.get_gyro()
             sensor_data["raw_gyro"] = self.raw_gyro
             sensor_data["gyro"] = np.round(gyr, 3).tolist()
+            sensor_data["raw_gyro_temp"] = self.get_raw_gyro_temperature()
 
         if self.ACC_ADDRESS is not None and sensor_fusion:
             if self.old_timestamp is not None and self.GYR_ADDRESS is not None:
                 dt = timestamp - self.old_timestamp
-                if use_mag and magnetometer is not None:
-                    q = self.madgwick.updateMARG(
-                        self.old_q, gyr=gyr, acc=acc, mag=magnetometer, dt=dt
-                    )
-                else:
-                    q = self.madgwick.updateIMU(
-                        self.old_q, gyr=gyr, acc=acc, dt=dt
-                    )
-            else:
-                if use_mag and magnetometer is not None:
-                    q = Tilt(acc=acc, mag=magnetometer).Q
-                else:
-                    q = Tilt(acc=acc).Q
-
-            roll, pitch, yaw = Quaternion(q).to_angles()
-            vertical_acceleration = np.sum(
-                np.array(
-                    [
-                        -np.sin(pitch),
-                        np.cos(pitch) * np.sin(roll),
-                        np.cos(pitch) * np.cos(roll),
-                    ]
-                )
-                * acc
-            )
-            sensor_data.update(
-                {
-                    "roll": -round(roll * RAD2DEG, 2),
-                    "pitch": round(pitch * RAD2DEG, 2),
-                    "vertical_acceleration": round(vertical_acceleration, 3),
-                }
-            )
-            if self.MAG_ADDRESS is not None:
-                sensor_data["yaw"] = -round(yaw * RAD2DEG, 2)
-            self.old_timestamp = timestamp
-            self.old_q = q
+        #                if use_mag and magnetometer is not None:
+        #                    q = self.madgwick.updateMARG(
+        #                        self.old_q, gyr=gyr, acc=acc, mag=magnetometer, dt=dt
+        #                    )
+        #                else:
+        #                    q = self.madgwick.updateIMU(
+        #                        self.old_q, gyr=gyr, acc=acc, dt=dt
+        #                    )
+        #            else:
+        #                if use_mag and magnetometer is not None:
+        #                    q = Tilt(acc=acc, mag=magnetometer).Q
+        #                else:
+        #                    q = Tilt(acc=acc).Q
+        #            roll, pitch, yaw = Quaternion(q).to_angles()
+        #            vertical_acceleration = np.sum(
+        #                np.array(
+        #                    [
+        #                        -np.sin(pitch),
+        #                        np.cos(pitch) * np.sin(roll),
+        #                        np.cos(pitch) * np.cos(roll),
+        #                    ]
+        #                )
+        #                * acc
+        #            )
+        #            sensor_data.update(
+        #                {
+        #                    "roll": -round(roll * RAD2DEG, 2),
+        #                    "pitch": round(pitch * RAD2DEG, 2),
+        #                    "vertical_acceleration": round(vertical_acceleration, 3),
+        #                }
+        #            )
+        #            if self.MAG_ADDRESS is not None:
+        #                sensor_data["yaw"] = -round(yaw * RAD2DEG, 2)
+        #            self.old_timestamp = timestamp
+        #            self.old_q = q
         return sensor_data
