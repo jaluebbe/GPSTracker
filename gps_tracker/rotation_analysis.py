@@ -63,7 +63,7 @@ class RotationAnalysis:
     def __init__(self):
         self.redis_connection = redis.Redis(decode_responses=True)
         self._pubsub = self.redis_connection.pubsub()
-        self._pubsub.subscribe("imu")
+        self._pubsub.subscribe("imu", "imu_barometer")
         self.old_rotations = self._get_stored_value("rotations", 0)
         self.old_compass_rotations = self._get_stored_value(
             "compass_rotations", 0
@@ -147,8 +147,12 @@ class RotationAnalysis:
             key = f"rotation:{data['i_hostname']}:{time.strftime('%Y%m%d')}"
             for _key in ("rpm", "on_trip", "heading"):
                 msg.pop(_key, None)
-            self.redis_connection.lpush(key, json.dumps(msg))
-            print(json.dumps(msg))
+            if (
+                msg.get("trip_duration") is not None
+                and msg["trip_duration"] > 10
+            ):
+                self.redis_connection.lpush(key, json.dumps(msg))
+                print(json.dumps(msg))
             self.redis_connection.set("trips", json.dumps(self.trips))
 
     def run(self):
