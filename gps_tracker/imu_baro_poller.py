@@ -20,7 +20,7 @@ def main():
     while True:
         t_start = time.time()
         baro_data = baro_sensor.get_sensor_data()
-        sensor_data = sensor.get_sensor_data(sensor_fusion=False)
+        imu_data = imu_sensor.get_sensor_data(sensor_fusion=False)
         imu_data["imu_barometer_available"] = True
         baro_data["imu_barometer_available"] = True
         redis_connection.publish("imu", json.dumps(imu_data))
