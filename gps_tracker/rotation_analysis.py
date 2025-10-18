@@ -1,7 +1,7 @@
 #!venv/bin/python3
 import json
+import math
 import redis
-import numpy as np
 import time
 import gyr_calibration
 
@@ -30,13 +30,11 @@ class Compass:
         self.mag_x_max = max(self.mag_x_max, x)
         self.mag_y_min = min(self.mag_y_min, y)
         self.mag_y_max = max(self.mag_y_max, y)
-        self.heading = (
-            np.arctan2(
-                -(y - 0.5 * (self.mag_y_min + self.mag_y_max)),
-                x - 0.5 * (self.mag_x_min + self.mag_x_max),
-            )
-            / np.pi
-            * 180
+        # Midpoints (hard-iron center estimates)
+        mag_x_offset = 0.5 * (self.mag_x_min + self.mag_x_max)
+        mag_y_offset = 0.5 * (self.mag_y_min + self.mag_y_max)
+        self.heading = math.degrees(
+            math.atan2(-(y - mag_y_offset), (x - mag_x_offset))
         )
         if self._old_heading is not None:
             self.rotations += (
@@ -52,10 +50,10 @@ class Gyro:
         self._old_timestamp = None
 
     def set_gyro_data(self, angular_rate, timestamp):
-        self.rpm = (angular_rate + self.gyro_offset) * 60 / (2 * np.pi)
+        self.rpm = (angular_rate + self.gyro_offset) * 60 / (2 * math.pi)
         if self._old_timestamp is not None:
             dt = timestamp - self._old_timestamp
-            self.rotations += angular_rate * dt / (2 * np.pi)
+            self.rotations += angular_rate * dt / (2 * math.pi)
         self._old_timestamp = timestamp
 
 
@@ -85,11 +83,8 @@ class RotationAnalysis:
     def process_message(self, item):
         if item["type"] != "message":
             return
-
         data = json.loads(item["data"])
-
-        if item["channel"] == "imu":
-            self.process_imu_data(data)
+        self.process_imu_data(data)
 
     def process_imu_data(self, data):
         angular_rate = data["gyro"][2]
