@@ -114,13 +114,16 @@ class Lsm:
                 denom = math.hypot(ay, az)
                 if denom < 1e-6:  # avoid division issues in near free-fall
                     denom = 1e-6
-                roll_deg = math.degrees(math.atan2(ay, az))
+                roll_deg = math.degrees(math.atan2(-ay, az))
                 pitch_deg = math.degrees(math.atan2(ax, denom))
                 sensor_data["roll"] = round(roll_deg, 2)
                 sensor_data["pitch"] = round(pitch_deg, 2)
         if self.MAG_ADDRESS is not None:
             magnetometer = self.get_magnetometer()
             sensor_data["raw_magnetometer"] = self.raw_magnetometer
+            mx, my = magnetometer[0], magnetometer[1]
+            yaw_deg = math.degrees(math.atan2(my, mx))
+            sensor_data["yaw"] = round(yaw_deg, 2)
         else:
             magnetometer = None
         if self.GYR_ADDRESS is not None:
