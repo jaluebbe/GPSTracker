@@ -39,25 +39,24 @@ def perform_calibration():
     input("Press (enter) to start a calibration step: ")
     while True:
         _pubsub = redis_connection.pubsub()
-        _pubsub.subscribe("imu")
+        _pubsub.subscribe("imu", "imu_barometer")
         t_start = None
         for item in _pubsub.listen():
             if not item["type"] == "message":
                 continue
-            if item["channel"] == "imu":
-                _data = json.loads(item["data"])
-                if t_start is None:
-                    t_start = _data["i_utc"]
-                elif _data["i_utc"] > t_start + measuring_duration:
-                    t_stop = _data["i_utc"]
-                    break
-                a_data = _data["raw_acceleration"]
-                running_a_min = tuple(
-                    map(lambda x, y: min(x, y), running_a_min, a_data)
-                )
-                running_a_max = tuple(
-                    map(lambda x, y: max(x, y), running_a_max, a_data)
-                )
+            _data = json.loads(item["data"])
+            if t_start is None:
+                t_start = _data["i_utc"]
+            elif _data["i_utc"] > t_start + measuring_duration:
+                t_stop = _data["i_utc"]
+                break
+            a_data = _data["raw_acceleration"]
+            running_a_min = tuple(
+                map(lambda x, y: min(x, y), running_a_min, a_data)
+            )
+            running_a_max = tuple(
+                map(lambda x, y: max(x, y), running_a_max, a_data)
+            )
         response = input(
             f"{measuring_duration}s of calibration completed.\n"
             f"min values: {running_a_min}\nmax values: {running_a_max}\n"
