@@ -5,7 +5,8 @@ import numpy as np
 
 redis_connection = redis.Redis(decode_responses=True)
 
-Z_RANGE_RATIO_THRESHOLD = 0.2  # motion ratio threshold for 2D suggestion
+Z_RANGE_RATIO_THRESHOLD = 0.35  # ratio above this AND sufficient absolute z range -> suggest 3D
+MIN_ABS_Z_FRACTION = 0.5  # z_range must be at least this fraction of avg_xy_range for 3D suggestion
 
 
 def _compute_midpoints(m_min, m_max):
@@ -28,7 +29,7 @@ def _save_offset(chosen_offset, is_3d):
 
 
 def perform_calibration():
-    measuring_duration = 15.0
+    measuring_duration = 30.0
     running_m_min = (32767, 32767, 32767)
     running_m_max = (-32768, -32768, -32768)
     print("Rotate (3D) or spin (2D) for calibration.")
@@ -75,7 +76,8 @@ def perform_calibration():
             "2D offset (z kept "
             f"{'previous' if previous_offset else '0.0'}): {m_offset_2d}"
         )
-        suggested = "3" if ratio >= Z_RANGE_RATIO_THRESHOLD else "2"
+        has_enough_z = z_range >= (avg_xy_range * MIN_ABS_Z_FRACTION)
+        suggested = "3" if (ratio >= Z_RANGE_RATIO_THRESHOLD and has_enough_z) else "2"
         response = input(
             "(Enter)=continue, (r)=reset, (s)=save suggested, (3)=save 3D, "
             "(2)=save 2D, (a)=abort "
