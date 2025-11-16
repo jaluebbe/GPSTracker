@@ -29,10 +29,6 @@
     <div style="text-align: center;"><canvas id="canvas-preview" width="380" height="230"></canvas></div>
     <table style="width:100%">
         <tr>
-            <td style="width: 50%">rotations</td>
-            <td style="width: 50%"><span id="rotations"></span></td>
-        </tr>
-        <tr>
             <td style="width: 50%">compass rotations</td>
             <td style="width: 50%"><span id="compass_rotations"></span></td>
         </tr>
@@ -219,7 +215,6 @@
             var delay = 0;
             processSpeedWarning(message.rpm)
             gauge.set(message.rpm);
-            rotations.innerHTML = message.rotations;
             compass_rotations.innerHTML = message.compass_rotations;
             trips.innerHTML = message.trips;
             if (message.on_trip) {

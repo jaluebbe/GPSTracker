@@ -36,26 +36,11 @@ class Compass:
         self._old_heading = self.heading
 
 
-class Gyro:
-    def __init__(self, rotations: float = 0):
-        self.rotations = rotations
-        self.gyro_offset = 0
-        self._old_timestamp = None
-
-    def set_gyro_data(self, angular_rate, timestamp):
-        self.rpm = (angular_rate + self.gyro_offset) * 60 / (2 * math.pi)
-        if self._old_timestamp is not None:
-            dt = timestamp - self._old_timestamp
-            self.rotations += angular_rate * dt / (2 * math.pi)
-        self._old_timestamp = timestamp
-
-
 class RotationAnalysis:
     def __init__(self):
         self.redis_connection = redis.Redis(decode_responses=True)
         self._pubsub = self.redis_connection.pubsub()
         self._pubsub.subscribe("imu", "imu_barometer")
-        self.old_rotations = self._get_stored_value("rotations", 0)
         self.old_compass_rotations = self._get_stored_value(
             "compass_rotations", 0
         )
@@ -67,7 +52,7 @@ class RotationAnalysis:
         self.archive = False
         self.last_msg = None
         self.compass = Compass(self.old_compass_rotations)
-        self.gyro = Gyro(self.old_rotations)
+        self.rpm = 0
 
     def _get_stored_value(self, key, default):
         stored_value = self.redis_connection.get(key)
@@ -82,27 +67,21 @@ class RotationAnalysis:
     def process_imu_data(self, data):
         angular_rate = data["gyro"][2]
         timestamp = data["i_utc"]
-        self.gyro.set_gyro_data(angular_rate, timestamp)
+        self.rpm = angular_rate * 60 / (2 * math.pi)
         self.compass.set_calibrated_yaw(data["yaw"])
 
         if self.on_trip:
             trip_duration = data["i_utc"] - self.trip_start
 
-        if self.gyro.rpm > self.min_trip_speed and not self.on_trip:
+        if self.rpm > self.min_trip_speed and not self.on_trip:
             self.on_trip = True
             self.trip_start = timestamp
             trip_duration = 0
-        elif self.gyro.rpm < self.min_trip_speed and self.on_trip:
+        elif self.rpm < self.min_trip_speed and self.on_trip:
             self.on_trip = False
             if trip_duration > self.min_trip_duration:
                 self.trips += 1
             self.archive = True
-
-        if self.gyro.rotations > self.old_rotations + 1:
-            self.redis_connection.set(
-                "rotations", json.dumps(self.gyro.rotations)
-            )
-            self.old_rotations = self.gyro.rotations
 
         if self.compass.rotations > self.old_compass_rotations + 1:
             self.redis_connection.set(
@@ -112,9 +91,8 @@ class RotationAnalysis:
 
         msg = {
             "utc": timestamp,
-            "rotations": int(self.gyro.rotations),
             "compass_rotations": int(self.compass.rotations),
-            "rpm": round(self.gyro.rpm, 3),
+            "rpm": round(self.rpm, 3),
             "heading": round(self.compass.heading, 3),
             "trips": self.trips,
             "on_trip": self.on_trip,
