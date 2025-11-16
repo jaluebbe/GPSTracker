@@ -113,6 +113,7 @@ class Lsm:
         if self.ACC_ADDRESS is not None:
             acc = self.get_acceleration()
             sensor_data["raw_acceleration"] = self.raw_acceleration
+            sensor_data["acc"] = np.round(acc, 4).tolist()
             # Simple tilt (roll/pitch) if no fusion
             if not sensor_fusion:
                 ax, ay, az = acc
@@ -139,5 +140,7 @@ class Lsm:
             sensor_data["raw_gyro_temp"] = self.get_raw_gyro_temperature()
         if self.ACC_ADDRESS is not None and sensor_fusion:
             if self.old_timestamp is not None and self.GYR_ADDRESS is not None:
-                dt = timestamp - self.old_timestamp  # placeholder for future fusion
+                dt = (
+                    timestamp - self.old_timestamp
+                )  # placeholder for future fusion
         return sensor_data
