@@ -17,25 +17,18 @@ def heading_diff(new_heading: float, old_heading: float) -> float:
 
 class Compass:
     def __init__(self, rotations: float = 0):
-        self.mag_x_min = 32768
-        self.mag_x_max = -32768
-        self.mag_y_min = 32768
-        self.mag_y_max = -32768
         self.rotations = rotations
         self._old_heading = None
         self.heading = None
+        self.yaw_invert = True
 
-    def set_mag_data(self, x, y):
-        self.mag_x_min = min(self.mag_x_min, x)
-        self.mag_x_max = max(self.mag_x_max, x)
-        self.mag_y_min = min(self.mag_y_min, y)
-        self.mag_y_max = max(self.mag_y_max, y)
-        # Midpoints (hard-iron center estimates)
-        mag_x_offset = 0.5 * (self.mag_x_min + self.mag_x_max)
-        mag_y_offset = 0.5 * (self.mag_y_min + self.mag_y_max)
-        self.heading = math.degrees(
-            math.atan2(-(y - mag_y_offset), (x - mag_x_offset))
-        )
+    def set_calibrated_yaw(self, yaw_deg: float):
+        heading = -yaw_deg if self.yaw_invert else yaw_deg
+        if heading <= -180:
+            heading += 360
+        elif heading > 180:
+            heading -= 360
+        self.heading = heading
         if self._old_heading is not None:
             self.rotations += (
                 heading_diff(self.heading, self._old_heading) / 360
@@ -90,9 +83,7 @@ class RotationAnalysis:
         angular_rate = data["gyro"][2]
         timestamp = data["i_utc"]
         self.gyro.set_gyro_data(angular_rate, timestamp)
-        mag_x = data["raw_magnetometer"][0]
-        mag_y = data["raw_magnetometer"][1]
-        self.compass.set_mag_data(mag_x, mag_y)
+        self.compass.set_calibrated_yaw(data["yaw"])
 
         if self.on_trip:
             trip_duration = data["i_utc"] - self.trip_start
@@ -120,6 +111,7 @@ class RotationAnalysis:
             self.old_compass_rotations = self.compass.rotations
 
         msg = {
+            "utc": timestamp,
             "rotations": int(self.gyro.rotations),
             "compass_rotations": int(self.compass.rotations),
             "rpm": round(self.gyro.rpm, 3),
@@ -153,7 +145,6 @@ class RotationAnalysis:
     def run(self):
         for item in self._pubsub.listen():
             self.process_message(item)
-            time.sleep(0.05)
 
 
 if __name__ == "__main__":
