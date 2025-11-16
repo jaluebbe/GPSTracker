@@ -33,11 +33,17 @@ class Lsm:
         self.load_calibration()
 
     def load_calibration(self):
-        for _key in self.calibration.keys():
-            _value = self.redis_connection.get(_key)
-            if _value is None:
+        for _key in self.calibration:
+            _raw = self.redis_connection.get(_key)
+            if _raw is None:
                 continue
-            self.calibration[_key] = json.loads(_value)
+            _value = json.loads(_raw)
+            if _key == "g_offset":
+                if self.calibration[_key] != _value:
+                    self.calibration[_key] = _value
+                    self.gyro_offset = imufusion.Offset(25)
+                continue
+            self.calibration[_key] = _value
         self.redis_connection.set("calibration_updated", 0)
 
     def check_calibration(self):
