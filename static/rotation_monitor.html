@@ -249,33 +249,59 @@
             }
         }
 
+        var lastRotationUtc = null;
+        var lastSmartMeterUtc = null;
+
+        function restartSocket(sock, starter) {
+            try {
+                if (sock) {
+                    sock.onclose = null;
+                    sock.onmessage = null;
+                    sock.close();
+                }
+            } catch(e) {}
+            starter();
+        }
+
         function connect() {
             ws_rotation = new WebSocket("ws://" + window.location.host + "/ws/rotation");
             ws_rotation.onmessage = function(event) {
                 let message = JSON.parse(event.data);
+                if (message.utc != null) {
+                    lastRotationUtc = parseFloat(message.utc);
+                }
                 processMessage(message);
-            }
-            ws_rotation.onclose = function(e) {
-                console.log('Socket is closed. Reconnect will be attempted in 5 seconds.', e.reason);
-                setTimeout(function() {
-                    connect();
-                }, 5000);
-            }
+            };
+            ws_rotation.onclose = function() {
+                setTimeout(connect, 5000);
+            };
         }
 
         function connectSmartMeter() {
             ws_smart_meter = new WebSocket("ws://" + window.location.host + "/ws/smart_meter");
             ws_smart_meter.onmessage = function(event) {
                 let message = JSON.parse(event.data);
+                if (message.utc != null) {
+                    lastSmartMeterUtc = parseInt(message.utc, 10);
+                }
                 processSmartMeter(message);
+            };
+            ws_smart_meter.onclose = function() {
+                setTimeout(connectSmartMeter, 5000);
+            };
+        }
+
+        function monitorSockets() {
+            const now = Date.now() / 1e3;
+            if (lastRotationUtc != null && now - lastRotationUtc > 12) {
+                restartSocket(ws_rotation, connect);
             }
-            ws_smart_meter.onclose = function(e) {
-                console.log('Socket is closed. Reconnect will be attempted in 5 seconds.', e.reason);
-                setTimeout(function() {
-                    connectSmartMeter();
-                }, 5000);
+            if (lastSmartMeterUtc != null && now - lastSmartMeterUtc > 40) {
+                restartSocket(ws_smart_meter, connectSmartMeter);
             }
         }
+        setInterval(monitorSockets, 6000);
+        window.onfocus = monitorSockets;
 
         function gyrCalibration() {
             spinner = new Spinner().spin(spinTarget);
