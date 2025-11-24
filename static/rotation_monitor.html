@@ -182,20 +182,25 @@
         const spinTarget = document.getElementById('gyrCalibrationResult');
         var spinner = undefined;
         var lastWarnSound = 0;
+        var isSoundPlaying = false;
 
         function processSpeedWarning(rpm) {
             const timestamp = new Date() / 1e3;
             let delay = 0;
-            if (soundOff.checked) {} else if (rpm >= 8 && timestamp - lastWarnSound > 3.6) {
+            if (soundOff.checked || isSoundPlaying) {} else if (rpm >= 8 && timestamp - lastWarnSound > 3.6) {
                 lastWarnSound = timestamp;
+                isSoundPlaying = true;
                 delay = playNote('a1', 2, delay);
                 delay = playNote('d2', 2, delay);
                 delay = playNote('a1', 2, delay);
                 delay = playNote('d2', 2, delay);
+                setTimeout(() => { isSoundPlaying = false; }, delay + 100);
             } else if (rpm >= 6 && timestamp - lastWarnSound > 10) {
                 lastWarnSound = timestamp;
+                isSoundPlaying = true;
                 delay = playNote('c1', 4, delay);
                 delay = playNote('g1', 4, delay);
+                setTimeout(() => { isSoundPlaying = false; }, delay + 100);
             }
         }
 
@@ -220,8 +225,9 @@
             if (message.on_trip) {
                 if (message.trip_duration >= minTripDuration) {
                     duration_cell.style.background = 'lightgreen';
-                    if (!beeped && !soundOff.checked) {
+                    if (!beeped && !soundOff.checked && !isSoundPlaying) {
                         beeped = true;
+                        isSoundPlaying = true;
                         let mySong = songs[message.trips % songs.length];
                         if (soundLong.checked) {
                             mySong.long.forEach(n=>{
@@ -232,6 +238,7 @@
                                 delay = playNote(n[0], n[1], delay, volume, mySong.bpm);
                             });
                         }
+                        setTimeout(() => { isSoundPlaying = false; }, delay + 100);
                     }
                 } else {
                     duration_cell.style.background = 'lightyellow';
@@ -313,7 +320,7 @@
             xhr.send();
         }
         connect();
-        connectSmartMeter();
+//        connectSmartMeter();
         toggleMinDuration();
     </script>
 </body>
