@@ -4,7 +4,7 @@ import json
 import socket
 import redis
 import numpy as np
-import imufusion
+from fusion_offset import FusionOffset
 import math
 
 
@@ -20,7 +20,7 @@ class Lsm:
         self.raw_gyro = None
         self.old_q = None
         self.old_timestamp = None
-        self.gyro_offset = imufusion.Offset(25)
+        self.gyro_offset = FusionOffset(25, threshold=0.9)
         self.calibration = {
             "g": 9.80665,
             "g_offset": [0.0, 0.0, 0.0],
@@ -41,7 +41,7 @@ class Lsm:
             if _key == "g_offset":
                 if self.calibration[_key] != _value:
                     self.calibration[_key] = _value
-                    self.gyro_offset = imufusion.Offset(25)
+                    self.gyro_offset = FusionOffset(25, threshold=0.9)
                 continue
             self.calibration[_key] = _value
         self.redis_connection.set("calibration_updated", 0)
