@@ -102,7 +102,7 @@ class RotationAnalysis:
         if self.on_trip:
             msg["trip_duration"] = int(trip_duration)
 
-        if self.last_msg is None or timestamp - self.last_msg > 0.3:
+        if self.last_msg is None or timestamp - self.last_msg > 1.0:
             self.redis_connection.publish("rotation", json.dumps(msg))
             self.last_msg = timestamp
 
@@ -112,10 +112,7 @@ class RotationAnalysis:
             key = f"rotation:{data['i_hostname']}:{time.strftime('%Y%m%d')}"
             for _key in ("rpm", "on_trip", "heading"):
                 msg.pop(_key, None)
-            if (
-                msg.get("trip_duration") is not None
-                and msg["trip_duration"] > 10
-            ):
+            if msg["trip_stop"] - msg["trip_start"] > 10:
                 self.redis_connection.lpush(key, json.dumps(msg))
                 print(json.dumps(msg))
             self.redis_connection.set("trips", json.dumps(self.trips))
