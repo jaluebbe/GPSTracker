@@ -84,7 +84,6 @@ source venv/bin/activate
 pip install -r requirements.txt
 ln -s ../../GEBCO_2022.nc gps_tracker/GEBCO_2022.nc
 ```
-```
 Check your Python version by calling:
 ```
 python --version
