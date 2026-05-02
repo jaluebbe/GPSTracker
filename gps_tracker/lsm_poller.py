@@ -12,15 +12,15 @@ def get_lsm_sensor():
     initializes."""
     try:
         return Lsm303d()
-    except:
+    except Exception:
         print("no LSM303d found")
     try:
         return Lsm9ds0()
-    except:
+    except Exception:
         print("no LSM9DS0 found")
     try:
         return Lsm6dsl_Lis3mdl()
-    except:
+    except Exception:
         print("no LSM6DSL+LIS3MDL found")
     return None
 

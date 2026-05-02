@@ -17,7 +17,7 @@ imu_history = deque(maxlen=50)
 imu_barometer_history = deque(maxlen=50)
 # Constants
 MAX_PAUSE = 30
-MAX_DIST = 8
+MAX_DIST = 2
 STATUS_THRESHOLD = 1
 H_UERE_NO_DGPS = 15.0
 DUMP_IGNORE_KEYS = [

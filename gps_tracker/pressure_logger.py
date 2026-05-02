@@ -21,6 +21,8 @@ class PressureLogger:
         self._pubsub.subscribe(["barometer", "transfer_data"])
 
     def process_transfer_data(self, data):
+        if "pressure" not in data:
+            return
         if data["utc"] > self.old_pressure_utc:
             self.old_pressure = data["pressure"]
             self.old_pressure_utc = data["utc"]

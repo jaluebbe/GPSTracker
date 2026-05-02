@@ -65,6 +65,7 @@ class RotationAnalysis:
         self.process_imu_data(data)
 
     def process_imu_data(self, data):
+        trip_duration = 0
         angular_rate = data["gyro"][2]
         timestamp = data["i_utc"]
         self.rpm = angular_rate * 60 / (2 * math.pi)
