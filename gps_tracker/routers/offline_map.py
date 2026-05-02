@@ -1,16 +1,19 @@
 import sqlite3
 import json
-from fastapi import APIRouter, HTTPException, Request, Response
-from pathlib import Path
+from fastapi import APIRouter, HTTPException, Request, Response, Path
+from pathlib import Path as FilePath
+from typing import Annotated
 
 router = APIRouter(tags=["offline_map"])
 
-osm_path = Path("../..")
-natural_earth_vector_path = Path("natural_earth_vector.mbtiles")
-natural_earth_shaded_relief_path = Path("natural_earth_2_shaded_relief.mbtiles")
+osm_path = FilePath("../..")
+natural_earth_vector_path = FilePath("natural_earth_vector.mbtiles")
+natural_earth_shaded_relief_path = FilePath(
+    "natural_earth_2_shaded_relief.mbtiles"
+)
 
 
-def get_db_connection(db_file_name: Path):
+def get_db_connection(db_file_name: FilePath):
     if not db_file_name.is_file():
         raise HTTPException(
             status_code=404, detail=f"File '{db_file_name}' not found."
@@ -35,7 +38,9 @@ def list_vector_regions():
 
 
 @router.get("/api/vector/metadata/{region}.json")
-def get_vector_metadata(region: str, request: Request):
+def get_vector_metadata(
+    region: Annotated[str, Path(pattern="^[a-zA-Z0-9_-]+$")], request: Request
+):
     db_file_name = osm_path / f"{region}.mbtiles"
     with get_db_connection(db_file_name) as db_connection:
         cursor = db_connection.execute("SELECT * FROM metadata")
@@ -68,7 +73,12 @@ def get_vector_metadata(region: str, request: Request):
 
 
 @router.get("/api/vector/tiles/{region}/{zoom_level}/{x}/{y}.pbf")
-def get_vector_tiles(region: str, zoom_level: int, x: int, y: int):
+def get_vector_tiles(
+    region: Annotated[str, Path(pattern="^[a-zA-Z0-9_-]+$")],
+    zoom_level: int,
+    x: int,
+    y: int,
+):
     tile_column = x
     tile_row = 2**zoom_level - 1 - y
     db_file_name = osm_path / f"{region}.mbtiles"
@@ -91,7 +101,11 @@ def get_vector_tiles(region: str, zoom_level: int, x: int, y: int):
 
 
 @router.get("/api/vector/style/{region}/{style_name}.json")
-def get_vector_style(region: str, style_name: str, request: Request):
+def get_vector_style(
+    region: Annotated[str, Path(pattern="^[a-zA-Z0-9_-]+$")],
+    style_name: str,
+    request: Request,
+):
     style_file_name = f"{style_name}_style.json"
     if not Path(style_file_name).is_file():
         raise HTTPException(
