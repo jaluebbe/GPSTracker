@@ -5,7 +5,14 @@ import logging
 from typing import List
 import numpy as np
 from redis import asyncio as aioredis
-from fastapi import APIRouter, HTTPException, Request, Response, WebSocket, status
+from fastapi import (
+    APIRouter,
+    HTTPException,
+    Request,
+    Response,
+    WebSocket,
+    status,
+)
 from ellipsoid_fit import ellipsoid_fit, data_regularize
 import gyr_calibration
 
@@ -21,14 +28,17 @@ async def _get_channel_data(channel):
     redis_connection = aioredis.Redis(host=redis_host, decode_responses=True)
     pubsub = redis_connection.pubsub(ignore_subscribe_messages=True)
     await pubsub.subscribe(channel)
-    while True:
-        message = await pubsub.get_message()
-        if message is not None:
-            _channel = message["channel"]
-            _data = json.loads(message["data"])
-            _data["channel"] = _channel
-            return _data
-        await asyncio.sleep(0.01)
+    try:
+        while True:
+            message = await pubsub.get_message()
+            if message is not None:
+                _channel = message["channel"]
+                _data = json.loads(message["data"])
+                _data["channel"] = _channel
+                return _data
+            await asyncio.sleep(0.01)
+    finally:
+        await redis_connection.aclose()
 
 
 @router.get("/api/current_pressure")
@@ -118,6 +128,7 @@ async def websocket_endpoint(websocket: WebSocket, channel: str):
 
 @router.post("/api/calibrate_magnetometer")
 async def calibrate_magnetometer(data: List):
+    redis_connection = aioredis.Redis(host=redis_host, decode_responses=True)
     # based on https://github.com/aleksandrbazhin/ellipsoid_fit_python
     center, evecs, radii, v = ellipsoid_fit(
         data_regularize(np.array(data), divs=8)
