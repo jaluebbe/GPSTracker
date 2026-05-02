@@ -1,11 +1,13 @@
 [Unit]
 Description=GPSD poller
-After=redis-server.service
+After=redis-server.service gpsd.service
+Requires=redis-server.service gpsd.service
 
 [Service]
 Type=simple
 User=gpstracker
 Restart=on-failure
+RestartSec=5
 ExecStart=/home/gpstracker/GPSTracker/gps_tracker/gps_poller.py
 WorkingDirectory=/home/gpstracker/GPSTracker/gps_tracker
 
