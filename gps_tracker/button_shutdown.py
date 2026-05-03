@@ -1,30 +1,32 @@
 #!/usr/bin/env python3
-import time
-import os
+import subprocess
 from syslog import syslog
+import gpiod
 
-# GPIO access for shutdown control
-import RPi.GPIO as GPIO
+BUTTON_GPIO = 21
+CHIP = "gpiochip0"
 
-GPIO.setmode(GPIO.BCM)  # Set pin numbering to board numbering
-GPIO.setup(21, GPIO.IN, pull_up_down=GPIO.PUD_UP)  # Setup pin 21 as an input
+chip = gpiod.Chip(CHIP)
+line = chip.get_line(BUTTON_GPIO)
+line.request(
+    consumer="button_shutdown",
+    type=gpiod.LINE_REQ_EV_FALLING_EDGE,
+    flags=gpiod.LINE_REQ_FLAG_BIAS_PULL_UP,
+)
+
+
+def shutdown():
+    syslog("Initiating system shutdown")
+    subprocess.run(["sudo", "shutdown", "-h", "now"])
+
 
 if __name__ == "__main__":
-    shutdown_triggered = False
     try:
         while True:
-            if GPIO.input(21) == 0:
-                shutdown_triggered = True
-                break
-            # reduce CPU usage by sleep time
-            time.sleep(1.0)
-    except (KeyboardInterrupt, SystemExit):  # when you press ctrl+c
-        print("Exception in main")
+            event = line.event_wait(sec=10)
+            if not event:
+                continue
+            line.event_read()
+            shutdown()
     finally:
-        print("\nKilling Thread...")
-        syslog("Killing Thread...")
-        if shutdown_triggered:
-            syslog("initiating system shutdown")
-            os.system("sudo shutdown -h now")  # Send shutdown command to os
-        else:
-            print("Exit without triggering shutdown.")
+        line.release()
