@@ -2,14 +2,18 @@
 import time
 import subprocess
 from syslog import syslog
-from gpiozero import Button
-from gpiozero.pins.lgpio import LGPIOFactory
-from gpiozero import Device
-
-Device.pin_factory = LGPIOFactory()
+import gpiod
 
 BUTTON_GPIO = 17
-button = Button(BUTTON_GPIO, bounce_time=0.2)
+CHIP = "gpiochip0"
+
+chip = gpiod.Chip(CHIP)
+line = chip.get_line(BUTTON_GPIO)
+line.request(
+    consumer="button_reboot_shutdown",
+    type=gpiod.LINE_REQ_EV_FALLING_EDGE,
+    flags=gpiod.LINE_REQ_FLAG_BIAS_PULL_UP,
+)
 
 
 def restart():
@@ -35,18 +39,23 @@ def wifi_on():
 if __name__ == "__main__":
     try:
         while True:
-            button.wait_for_press()
+            event = line.event_wait(sec=10)
+            if not event:
+                continue
+            line.event_read()
             press_start = time.monotonic()
-            button.wait_for_release()
-            hold_time = time.monotonic() - press_start
-
-            if hold_time > 5:
-                shutdown()
-            elif hold_time >= 2:
-                restart()
-            elif hold_time >= 0.5:
-                wifi_off()
+            while line.get_value() == 0:
+                time.sleep(0.05)
+                if time.monotonic() - press_start > 5:
+                    shutdown()
+                    break
             else:
-                wifi_on()
+                hold_time = time.monotonic() - press_start
+                if hold_time >= 2:
+                    restart()
+                elif hold_time >= 0.5:
+                    wifi_off()
+                else:
+                    wifi_on()
     finally:
-        button.close()
+        line.release()
