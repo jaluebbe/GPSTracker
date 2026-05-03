@@ -107,7 +107,7 @@ def get_vector_style(
     request: Request,
 ):
     style_file_name = f"{style_name}_style.json"
-    if not Path(style_file_name).is_file():
+    if not FilePath(style_file_name).is_file():
         raise HTTPException(
             status_code=404, detail=f"Style '{style_name}' not known."
         )
