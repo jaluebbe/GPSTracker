@@ -8,6 +8,7 @@ from redis import asyncio as aioredis
 from fastapi import (
     APIRouter,
     HTTPException,
+    Query,
     Request,
     Response,
     WebSocket,
@@ -22,6 +23,16 @@ if "REDIS_HOST" in os.environ:
     redis_host = os.environ["REDIS_HOST"]
 else:
     redis_host = "127.0.0.1"
+
+SUPPORTED_CHANNELS = {
+    "imu",
+    "gps",
+    "barometer",
+    "transfer_data",
+    "imu_barometer",
+    "rotation",
+    "smart_meter",
+}
 
 
 async def _get_channel_data(channel):
@@ -103,22 +114,44 @@ async def redis_connector(
     for task in pending:
         logging.debug(f"Cancelling task: {task}")
         task.cancel()
-    await redis_connection.close()
+    await redis_connection.aclose()
+
+
+async def _stream_channels(websocket: WebSocket, *channels: str):
+    await websocket.accept()
+    redis_connection = aioredis.Redis(host=redis_host, decode_responses=True)
+    pubsub = redis_connection.pubsub(ignore_subscribe_messages=True)
+    await pubsub.subscribe(*channels)
+    try:
+        while True:
+            message = await pubsub.get_message()
+            if message is not None:
+                await websocket.send_text(message["data"])
+            await asyncio.sleep(0.01)
+    except Exception:
+        pass
+    finally:
+        await redis_connection.aclose()
+
+
+@router.websocket("/ws/messages")
+async def websocket_multi_channel(
+    websocket: WebSocket,
+    channels: str = Query(...),
+):
+    channel_list = [c.strip() for c in channels.split(",")]
+    unsupported = [c for c in channel_list if c not in SUPPORTED_CHANNELS]
+    if unsupported:
+        await websocket.accept()
+        await websocket.close(code=status.WS_1003_UNSUPPORTED_DATA)
+        return
+    await _stream_channels(websocket, *channel_list)
 
 
 @router.websocket("/ws/{channel}")
 async def websocket_endpoint(websocket: WebSocket, channel: str):
-    supported_channels = [
-        "imu",
-        "gps",
-        "barometer",
-        "transfer_data",
-        "imu_barometer",
-        "rotation",
-        "smart_meter",
-    ]
     await websocket.accept()
-    if channel not in supported_channels:
+    if channel not in SUPPORTED_CHANNELS:
         await websocket.close(code=status.WS_1003_UNSUPPORTED_DATA)
         return
     await redis_connector(
@@ -142,4 +175,5 @@ async def calibrate_magnetometer(data: List):
     calibration = {"m_matrix": TR.tolist(), "m_offset": center.tolist()}
     for _key, _value in calibration.items():
         await redis_connection.set(_key, json.dumps(_value))
+    await redis_connection.aclose()
     return calibration
