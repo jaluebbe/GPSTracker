@@ -29,10 +29,6 @@
     <div style="text-align: center;"><canvas id="canvas-preview" width="380" height="230"></canvas></div>
     <table style="width:100%">
         <tr>
-            <td style="width: 50%">rotations</td>
-            <td style="width: 50%"><span id="rotations"></span></td>
-        </tr>
-        <tr>
             <td style="width: 50%">compass rotations</td>
             <td style="width: 50%"><span id="compass_rotations"></span></td>
         </tr>
@@ -69,11 +65,39 @@
             <td><span id="gyrCalibrationResult"></span></td>
         </tr>
     </table>
+    <br>
+    <table style="width:100%; display: none;" class="smartMeterData">
+        <tr>
+            <td colspan="2">electric power</td>
+            <td><span id="meterConsumptionPower"></span>&nbsp;W</td>
+        </tr>
+        <tr>
+            <td>L1</td>
+            <td><span id="voltageL1"></span>&nbsp;V</td>
+            <td><span id="currentL1"></span>&nbsp;A</td>
+        </tr>
+        <tr>
+            <td>L2</td>
+            <td><span id="voltageL2"></span>&nbsp;V</td>
+            <td><span id="currentL2"></span>&nbsp;A</td>
+        </tr>
+        <tr>
+            <td>L3</td>
+            <td><span id="voltageL3"></span>&nbsp;V</td>
+            <td><span id="currentL3"></span>&nbsp;A</td>
+        </tr>
+    </table>
     <script src="spin.js/spin.min.js"></script>
     <script src="music.js"></script>
     <script src="no_sleep.min.js"></script>
     <script>
         var noSleep = new NoSleep();
+        function toggle_by_class(cls, on) {
+            var lst = document.getElementsByClassName(cls);
+            for(var i = 0; i < lst.length; ++i) {
+                lst[i].style.display = on ? '' : 'none';
+            }
+        }
         function toggleMinDuration() {
             if (minDurationA.checked) {
                 minTripDuration = parseFloat(minDurationInputA.value);
@@ -152,40 +176,58 @@
         gauge.maxValue = 10; // set max gauge value
         gauge.setMinValue(-1); // set min value
         gauge.set(0);
-        var ws = undefined;
+        var ws_rotation = undefined;
+        var ws_smart_meter = undefined;
         var beeped = false;
         const spinTarget = document.getElementById('gyrCalibrationResult');
         var spinner = undefined;
         var lastWarnSound = 0;
+        var isSoundPlaying = false;
 
         function processSpeedWarning(rpm) {
             const timestamp = new Date() / 1e3;
             let delay = 0;
-            if (soundOff.checked) {} else if (rpm >= 8 && timestamp - lastWarnSound > 3.6) {
+            if (soundOff.checked || isSoundPlaying) {} else if (rpm >= 8 && timestamp - lastWarnSound > 3.6) {
                 lastWarnSound = timestamp;
+                isSoundPlaying = true;
                 delay = playNote('a1', 2, delay);
                 delay = playNote('d2', 2, delay);
                 delay = playNote('a1', 2, delay);
                 delay = playNote('d2', 2, delay);
+                setTimeout(() => { isSoundPlaying = false; }, delay + 100);
             } else if (rpm >= 6 && timestamp - lastWarnSound > 10) {
                 lastWarnSound = timestamp;
+                isSoundPlaying = true;
                 delay = playNote('c1', 4, delay);
                 delay = playNote('g1', 4, delay);
+                setTimeout(() => { isSoundPlaying = false; }, delay + 100);
             }
+        }
+
+        function processSmartMeter(message) {
+            toggle_by_class("smartMeterData", true);
+            let consumptionPower = parseFloat(message.power);
+            meterConsumptionPower.innerHTML = consumptionPower;
+            voltageL1.innerHTML = parseFloat(message.voltagePhase1).toFixed(1);
+            voltageL2.innerHTML = parseFloat(message.voltagePhase2).toFixed(1);
+            voltageL3.innerHTML = parseFloat(message.voltagePhase3).toFixed(1);
+            currentL1.innerHTML = parseFloat(message.currentL1).toFixed(2);
+            currentL2.innerHTML = parseFloat(message.currentL2).toFixed(2);
+            currentL3.innerHTML = parseFloat(message.currentL3).toFixed(2);
         }
 
         function processMessage(message) {
             var delay = 0;
             processSpeedWarning(message.rpm)
             gauge.set(message.rpm);
-            rotations.innerHTML = message.rotations;
             compass_rotations.innerHTML = message.compass_rotations;
             trips.innerHTML = message.trips;
             if (message.on_trip) {
                 if (message.trip_duration >= minTripDuration) {
                     duration_cell.style.background = 'lightgreen';
-                    if (!beeped && !soundOff.checked) {
+                    if (!beeped && !soundOff.checked && !isSoundPlaying) {
                         beeped = true;
+                        isSoundPlaying = true;
                         let mySong = songs[message.trips % songs.length];
                         if (soundLong.checked) {
                             mySong.long.forEach(n=>{
@@ -196,6 +238,7 @@
                                 delay = playNote(n[0], n[1], delay, volume, mySong.bpm);
                             });
                         }
+                        setTimeout(() => { isSoundPlaying = false; }, delay + 100);
                     }
                 } else {
                     duration_cell.style.background = 'lightyellow';
@@ -208,19 +251,59 @@
             }
         }
 
+        var lastRotationUtc = null;
+        var lastSmartMeterUtc = null;
+
+        function restartSocket(sock, starter) {
+            try {
+                if (sock) {
+                    sock.onclose = null;
+                    sock.onmessage = null;
+                    sock.close();
+                }
+            } catch(e) {}
+            starter();
+        }
+
         function connect() {
             ws_rotation = new WebSocket("ws://" + window.location.host + "/ws/rotation");
             ws_rotation.onmessage = function(event) {
                 let message = JSON.parse(event.data);
+                if (message.utc != null) {
+                    lastRotationUtc = parseFloat(message.utc);
+                }
                 processMessage(message);
+            };
+            ws_rotation.onclose = function() {
+                setTimeout(connect, 5000);
+            };
+        }
+
+        function connectSmartMeter() {
+            ws_smart_meter = new WebSocket("ws://" + window.location.host + "/ws/smart_meter");
+            ws_smart_meter.onmessage = function(event) {
+                let message = JSON.parse(event.data);
+                if (message.utc != null) {
+                    lastSmartMeterUtc = parseInt(message.utc, 10);
+                }
+                processSmartMeter(message);
+            };
+            ws_smart_meter.onclose = function() {
+                setTimeout(connectSmartMeter, 5000);
+            };
+        }
+
+        function monitorSockets() {
+            const now = Date.now() / 1e3;
+            if (lastRotationUtc != null && now - lastRotationUtc > 12) {
+                restartSocket(ws_rotation, connect);
             }
-            ws_rotation.onclose = function(e) {
-                console.log('Socket is closed. Reconnect will be attempted in 5 seconds.', e.reason);
-                setTimeout(function() {
-                    connect();
-                }, 5000);
+            if (lastSmartMeterUtc != null && now - lastSmartMeterUtc > 40) {
+                restartSocket(ws_smart_meter, connectSmartMeter);
             }
         }
+        setInterval(monitorSockets, 6000);
+        window.onfocus = monitorSockets;
 
         function gyrCalibration() {
             spinner = new Spinner().spin(spinTarget);
@@ -237,6 +320,7 @@
             xhr.send();
         }
         connect();
+//        connectSmartMeter();
         toggleMinDuration();
     </script>
 </body>

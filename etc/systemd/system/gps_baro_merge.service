@@ -1,11 +1,13 @@
 [Unit]
 Description=Merge GPS and barometric data with additional information
-After=redis-server.service
+After=redis-server.service gpspoller.service
+Requires=redis-server.service gpspoller.service
 
 [Service]
 Type=simple
 User=gpstracker
 Restart=on-failure
+RestartSec=5
 ExecStart=/home/gpstracker/GPSTracker/gps_tracker/gps_baro_merge.py
 WorkingDirectory=/home/gpstracker/GPSTracker/gps_tracker
 

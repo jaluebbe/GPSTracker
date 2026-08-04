@@ -1,53 +1,61 @@
 #!/usr/bin/env python3
 import time
-import os
+import subprocess
 from syslog import syslog
-import RPi.GPIO as GPIO
+import gpiod
 
 BUTTON_GPIO = 17
-GPIO.setmode(GPIO.BCM)
-GPIO.setup(BUTTON_GPIO, GPIO.IN)
+CHIP = "gpiochip0"
+
+chip = gpiod.Chip(CHIP)
+line = chip.get_line(BUTTON_GPIO)
+line.request(
+    consumer="button_reboot_shutdown",
+    type=gpiod.LINE_REQ_EV_FALLING_EDGE,
+    flags=gpiod.LINE_REQ_FLAG_BIAS_PULL_UP,
+)
 
 
 def restart():
     syslog("Initiating system restart")
-    os.system("sudo shutdown -r now")
-    exit(0)
+    subprocess.run(["sudo", "shutdown", "-r", "now"])
 
 
 def shutdown():
     syslog("Initiating system shutdown")
-    os.system("sudo shutdown -h now")
-    exit(0)
+    subprocess.run(["sudo", "shutdown", "-h", "now"])
 
 
 def wifi_off():
-    wifi_status = os.popen("nmcli radio wifi").read().strip()
-    if wifi_status == "enabled":
-        syslog("Disabling Wi-Fi")
-        os.system("sudo nmcli radio wifi off")
+    syslog("Disabling Wi-Fi")
+    subprocess.run(["sudo", "nmcli", "radio", "wifi", "off"])
 
 
 def wifi_on():
-    wifi_status = os.popen("nmcli radio wifi").read().strip()
-    if wifi_status != "enabled":
-        syslog("Enabling Wi-Fi")
-        os.system("sudo nmcli radio wifi on")
+    syslog("Enabling Wi-Fi")
+    subprocess.run(["sudo", "nmcli", "radio", "wifi", "on"])
 
 
 if __name__ == "__main__":
-    while True:
-        GPIO.wait_for_edge(BUTTON_GPIO, GPIO.FALLING, bouncetime=200)
-        hold_time = 0
-        while GPIO.input(BUTTON_GPIO) == GPIO.LOW:
-            time.sleep(0.1)
-            hold_time += 0.1
-            if hold_time > 5:
-                shutdown()
-        if hold_time < 0.5:
-            wifi_on()
-        elif hold_time < 2:
-            wifi_off()
-            continue
-        elif hold_time >= 2:
-            restart()
+    try:
+        while True:
+            event = line.event_wait(sec=10)
+            if not event:
+                continue
+            line.event_read()
+            press_start = time.monotonic()
+            while line.get_value() == 0:
+                time.sleep(0.05)
+                if time.monotonic() - press_start > 5:
+                    shutdown()
+                    break
+            else:
+                hold_time = time.monotonic() - press_start
+                if hold_time >= 2:
+                    restart()
+                elif hold_time >= 0.5:
+                    wifi_off()
+                else:
+                    wifi_on()
+    finally:
+        line.release()

@@ -4,7 +4,8 @@ import json
 import socket
 import redis
 import numpy as np
-import imufusion
+from fusion_offset import FusionOffset
+import math
 
 
 class Lsm:
@@ -19,7 +20,7 @@ class Lsm:
         self.raw_gyro = None
         self.old_q = None
         self.old_timestamp = None
-        self.gyro_offset = imufusion.Offset(25)
+        self.gyro_offset = FusionOffset(25, threshold=0.9)
         self.calibration = {
             "g": 9.80665,
             "g_offset": [0.0, 0.0, 0.0],
@@ -32,11 +33,17 @@ class Lsm:
         self.load_calibration()
 
     def load_calibration(self):
-        for _key in self.calibration.keys():
-            _value = self.redis_connection.get(_key)
-            if _value is None:
+        for _key in self.calibration:
+            _raw = self.redis_connection.get(_key)
+            if _raw is None:
                 continue
-            self.calibration[_key] = json.loads(_value)
+            _value = json.loads(_raw)
+            if _key == "g_offset":
+                if self.calibration[_key] != _value:
+                    self.calibration[_key] = _value
+                    self.gyro_offset = FusionOffset(25, threshold=0.9)
+                continue
+            self.calibration[_key] = _value
         self.redis_connection.set("calibration_updated", 0)
 
     def check_calibration(self):
@@ -106,9 +113,24 @@ class Lsm:
         if self.ACC_ADDRESS is not None:
             acc = self.get_acceleration()
             sensor_data["raw_acceleration"] = self.raw_acceleration
+            sensor_data["acc"] = np.round(acc, 4).tolist()
+            # Simple tilt (roll/pitch) if no fusion
+            if not sensor_fusion:
+                ax, ay, az = acc
+                # hypot gives sqrt(ay^2 + az^2) (stable)
+                denom = math.hypot(ay, az)
+                if denom < 1e-6:  # avoid division issues in near free-fall
+                    denom = 1e-6
+                roll_deg = math.degrees(math.atan2(-ay, az))
+                pitch_deg = math.degrees(math.atan2(ax, denom))
+                sensor_data["roll"] = round(roll_deg, 2)
+                sensor_data["pitch"] = round(pitch_deg, 2)
         if self.MAG_ADDRESS is not None:
             magnetometer = self.get_magnetometer()
             sensor_data["raw_magnetometer"] = self.raw_magnetometer
+            mx, my = magnetometer[0], magnetometer[1]
+            yaw_deg = math.degrees(math.atan2(my, mx))
+            sensor_data["yaw"] = round(yaw_deg, 2)
         else:
             magnetometer = None
         if self.GYR_ADDRESS is not None:
@@ -116,43 +138,9 @@ class Lsm:
             sensor_data["raw_gyro"] = self.raw_gyro
             sensor_data["gyro"] = np.round(gyr, 3).tolist()
             sensor_data["raw_gyro_temp"] = self.get_raw_gyro_temperature()
-
         if self.ACC_ADDRESS is not None and sensor_fusion:
             if self.old_timestamp is not None and self.GYR_ADDRESS is not None:
-                dt = timestamp - self.old_timestamp
-        #                if use_mag and magnetometer is not None:
-        #                    q = self.madgwick.updateMARG(
-        #                        self.old_q, gyr=gyr, acc=acc, mag=magnetometer, dt=dt
-        #                    )
-        #                else:
-        #                    q = self.madgwick.updateIMU(
-        #                        self.old_q, gyr=gyr, acc=acc, dt=dt
-        #                    )
-        #            else:
-        #                if use_mag and magnetometer is not None:
-        #                    q = Tilt(acc=acc, mag=magnetometer).Q
-        #                else:
-        #                    q = Tilt(acc=acc).Q
-        #            roll, pitch, yaw = Quaternion(q).to_angles()
-        #            vertical_acceleration = np.sum(
-        #                np.array(
-        #                    [
-        #                        -np.sin(pitch),
-        #                        np.cos(pitch) * np.sin(roll),
-        #                        np.cos(pitch) * np.cos(roll),
-        #                    ]
-        #                )
-        #                * acc
-        #            )
-        #            sensor_data.update(
-        #                {
-        #                    "roll": -round(roll * RAD2DEG, 2),
-        #                    "pitch": round(pitch * RAD2DEG, 2),
-        #                    "vertical_acceleration": round(vertical_acceleration, 3),
-        #                }
-        #            )
-        #            if self.MAG_ADDRESS is not None:
-        #                sensor_data["yaw"] = -round(yaw * RAD2DEG, 2)
-        #            self.old_timestamp = timestamp
-        #            self.old_q = q
+                dt = (
+                    timestamp - self.old_timestamp
+                )  # placeholder for future fusion
         return sensor_data

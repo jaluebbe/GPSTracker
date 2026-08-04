@@ -37,8 +37,8 @@ def split_track_segments(tracking_data, delta_t=600):
 
 @router.get("/api/available_datasets")
 async def get_available_datasets(
-    category: str = Query("*", regex="^[*a-z0-9]*$"),
-    date: str = Query("*", max_length=8, regex="^[*0-9]*$"),
+    category: str = Query("*", pattern="^[*a-z0-9]*$"),
+    date: str = Query("*", max_length=8, pattern="^[*0-9]*$"),
 ):
     redis_connection = aioredis.Redis(host=redis_host, decode_responses=True)
     datasets = [
@@ -50,8 +50,8 @@ async def get_available_datasets(
 
 @router.get("/api/archived_datasets")
 async def get_archived_datasets(
-    category: str = Query("*", regex="^[*a-z0-9]*$"),
-    date: str = Query("*", max_length=8, regex="^[*0-9]*$"),
+    category: str = Query("*", pattern="^[*a-z0-9]*$"),
+    date: str = Query("*", max_length=8, pattern="^[*0-9]*$"),
 ):
     datasets = [
         _file.name.split(".json")[0]
@@ -68,7 +68,10 @@ async def get_dataset(
     from_archive: bool = Query(False),
 ):
     if from_archive:
-        with log_directory.joinpath(f"{_id}.json").open() as f:
+        archive_file = log_directory.joinpath(f"{_id}.json")
+        if not archive_file.exists():
+            raise HTTPException(status_code=404, detail="dataset unknown.")
+        with archive_file.open() as f:
             tracking_data = json.load(f)
     else:
         redis_connection = aioredis.Redis(
@@ -123,7 +126,10 @@ async def get_geojson_dataset(
     from_archive: bool = Query(False),
 ):
     if from_archive:
-        with log_directory.joinpath(f"{_id}.json").open() as f:
+        archive_file = log_directory.joinpath(f"{_id}.json")
+        if not archive_file.exists():
+            raise HTTPException(status_code=404, detail="dataset unknown.")
+        with archive_file.open() as f:
             tracking_data = json.load(f)
     else:
         redis_connection = aioredis.Redis(

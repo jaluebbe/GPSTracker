@@ -17,7 +17,7 @@ imu_history = deque(maxlen=50)
 imu_barometer_history = deque(maxlen=50)
 # Constants
 MAX_PAUSE = 30
-MAX_DIST = 8
+MAX_DIST = 2
 STATUS_THRESHOLD = 1
 H_UERE_NO_DGPS = 15.0
 DUMP_IGNORE_KEYS = [
@@ -88,11 +88,11 @@ def get_distance(location1, location2):
     return distance
 
 
-def update_data_with_history(data, history, key_prefix):
+def update_data_with_history(data, history, key_prefix, threshold=0.08):
     """Update data with the most recent entry from history."""
     while history:
         history_data = history.popleft()
-        if history_data[f"{key_prefix}_utc"] > data["utc"] - 0.08:
+        if history_data[f"{key_prefix}_utc"] > data["utc"] - threshold:
             data.update(history_data)
             break
 
@@ -108,8 +108,8 @@ def process_gps_data(data):
 
     location = (data["lat"], data["lon"])
     update_data_with_history(data, pressure_history, "p")
-    update_data_with_history(data, imu_history, "i")
-    update_data_with_history(data, imu_barometer_history, "p")
+    update_data_with_history(data, imu_history, "i", 0.04)
+    update_data_with_history(data, imu_barometer_history, "i", 0.04)
 
     hdop = data.get("hdop")
     error = hdop * H_UERE_NO_DGPS if hdop is not None else None
@@ -159,9 +159,9 @@ for item in _pubsub.listen():
         continue
     channel = item["channel"]
     data = json.loads(item["data"])
-    if channel == "barometer" and not data.get("imu_barometer_available"):
+    if channel == "barometer":
         pressure_history.append(data)
-    elif channel == "imu" and not data.get("imu_barometer_available"):
+    elif channel == "imu":
         imu_history.append(data)
     elif channel == "imu_barometer":
         imu_barometer_history.append(data)

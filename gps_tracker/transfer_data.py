@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!venv/bin/python3
 import redis
 import json
 import requests
@@ -9,7 +9,7 @@ redis_connection = redis.Redis(decode_responses=True)
 _pubsub = redis_connection.pubsub()
 _pubsub.subscribe(["transfer_data"])
 
-with open("/home/pi/gps_config.json") as json_data_file:
+with open("/home/gpstracker/gps_config.json") as json_data_file:
     config = json.load(json_data_file)
 
 transfer_deque = deque()
@@ -23,7 +23,7 @@ ts = transfer_deque
 message_buffer = deque()
 
 for item in _pubsub.listen():
-    if not item[u"type"] == "message":
+    if not item["type"] == "message":
         continue
     ts.append(json.loads(item["data"]))
     if (

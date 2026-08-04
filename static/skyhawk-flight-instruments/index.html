@@ -9,11 +9,13 @@
 <body>
     <div class="instruments">
         <div>
+            <span id="airspeed"></span>
             <span id="attitude"></span>
-            <span id="heading"></span>
+            <span id="altimeter"></span>
         </div>
         <div>
-            <span id="altimeter"></span>
+            <span id="turncoordinator"></span>
+            <span id="heading"></span>
             <span id="variometer"></span>
         </div>
     </div>
@@ -51,6 +53,14 @@
             showBox: false
         });
         var altimeter = $.flightIndicator('#altimeter', 'altimeter', {
+            size: size,
+            showBox: false
+        });
+        var airspeed = $.flightIndicator('#airspeed', 'airspeed', {
+            size: size,
+            showBox: false
+        });
+        var turn_coordinator = $.flightIndicator('#turncoordinator', 'turn_coordinator', {
             size: size,
             showBox: false
         });

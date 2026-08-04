@@ -5,24 +5,26 @@ import numpy as np
 from collections import deque
 
 
-def calibrate(measuring_duration=5):
+def calibrate(measuring_duration: float = 5.0) -> dict:
     redis_connection = redis.Redis(decode_responses=True)
     gyro_data = deque()
     temp_data = deque()
     _pubsub = redis_connection.pubsub()
-    _pubsub.subscribe("imu")
+    _pubsub.subscribe("imu", "imu_barometer")
     t_start = None
     for item in _pubsub.listen():
-        if not item["type"] == "message":
+        if item["type"] != "message":
             continue
-        if item["channel"] == "imu":
-            _data = json.loads(item["data"])
-            if t_start is None:
-                t_start = _data["i_utc"]
-            elif _data["i_utc"] > t_start + measuring_duration:
-                break
-            gyro_data.append(_data["raw_gyro"])
-            temp_data.append(_data["raw_gyro_temp"])
+        _data = json.loads(item["data"])
+        if t_start is None:
+            t_start = _data["i_utc"]
+        elif _data["i_utc"] > t_start + measuring_duration:
+            break
+        gyro_data.append(_data["raw_gyro"])
+        temp_data.append(_data["raw_gyro_temp"])
+
+    if not gyro_data:
+        raise RuntimeError("No gyro samples collected.")
     g_offset = np.median(gyro_data, axis=0).astype(int).tolist()
     g_temp = int(np.median(temp_data))
     redis_connection.set("g_offset", json.dumps(g_offset))

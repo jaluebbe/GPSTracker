@@ -14,8 +14,7 @@ app.mount("/static", StaticFiles(directory="../static"), name="static")
 if Path("../fonts").is_dir():
     app.mount("/fonts", StaticFiles(directory="../fonts"), name="fonts")
 log_directory = Path("../logs_json")
-if not log_directory.is_dir():
-    log_directory.mkdir()
+log_directory.mkdir(exist_ok=True)
 app.mount("/archive", StaticFiles(directory=log_directory), name="archive")
 
 app.include_router(offline_map.router)

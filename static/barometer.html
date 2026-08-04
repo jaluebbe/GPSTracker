@@ -60,9 +60,11 @@
         };
         Plotly.newPlot('graph', data, layout, config);
 
-        var ws = new WebSocket("ws://" + window.location.host + "/ws/barometer");
+        var wsScheme = window.location.protocol === "https:" ? "wss://" : "ws://";
+        var ws = new WebSocket(wsScheme + window.location.host + "/ws/messages?channels=barometer,imu_barometer");
         ws.onmessage = function(event) {
             let message = JSON.parse(event.data);
+            if (!message.pressure || !message.p_utc) return;
             var time = message.p_utc * 1000;
             var update = {
                 x: [
@@ -74,6 +76,9 @@
             };
             Plotly.extendTraces('graph', update, [0], 2000);
         }
+        ws.onclose = function() {
+            setTimeout(() => location.reload(), 3000);
+        };
     </script>
 </body>
 
