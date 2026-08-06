@@ -79,6 +79,7 @@ pip install fastapi geojson websockets pygeodesy redis uvicorn
 git clone https://github.com/jaluebbe/GPSTracker.git
 cd GPSTracker
 git clone https://github.com/klokantech/klokantech-gl-fonts fonts
+cd gps_tracker
 python -m venv --system-site-packages venv
 source venv/bin/activate
 pip install -r requirements.txt
@@ -93,10 +94,7 @@ pip install eval_type_backport
 ```
 
 ### Test Python scripts
-Enter the subfolder containing all the Python scripts:
-```
-cd gps_tracker
-```
+Keep the window open where you are in the folder `~/GPSTracker/gps_tracker`.
 Open a second terminal window where you call
 ```
 redis-cli
