@@ -207,6 +207,19 @@ Finally, copy the output.mbtiles to the following location on your Raspberry Pi:
 Download the [GEBCO_2024 grid](https://www.gebco.net/data_and_products/gridded_bathymetry_data/)
 in netCDF format and copy GEBCO_2024.nc to the user folder of "gpstracker".
 
+#### Worldwide low-zoom fallback
+
+If your regional extract (e.g. "dach") does not cover a track, the API falls
+back to worldwide data at low zoom levels. natural_earth_vector.mbtiles is
+included in this repository for that purpose.
+
+Optionally, download the pre-built "planet-z10" file for zoom levels up to
+10 worldwide:
+```
+pip install gdown
+gdown 'https://drive.google.com/uc?id=1DHiE-9SmeqHfb12flujXxsxst6TdPnlo' -O /home/gpstracker/planet_fallback.mbtiles
+```
+
 ### Local web API
 ```
 sudo cp /home/gpstracker/GPSTracker/etc/systemd/system/gps_tracker_api.service /etc/systemd/system/
