@@ -237,6 +237,25 @@ You may access the API via [ip or hostname]:8080/docs .
 ### Setup port forwarding
 If you would avoid to add :8080 to the hostname of the device you can create
 a port forwarding from port 80 to 8080.
+
+#### Bookworm and newer (nftables)
+```
+sudo apt install nftables
+sudo tee -a /etc/nftables.conf > /dev/null << 'EOF'
+
+table ip gpstracker_nat {
+    chain prerouting {
+        type nat hook prerouting priority dstnat; policy accept;
+        tcp dport 80 redirect to :8080
+    }
+}
+EOF
+sudo systemctl enable --now nftables
+sudo nft list ruleset
+```
+The rule applies to all interfaces (WLAN and Ethernet).
+
+#### Bullseye and older (iptables)
 At first try if it works by calling
 ```
 sudo /usr/sbin/iptables -A PREROUTING -t nat -i wlan0 -p tcp --dport 80 -j REDIRECT --to-port 8080
@@ -251,6 +270,7 @@ If you change your rules after the installation of iptables-persistent just
 call:
 ```
 sudo netfilter-persistent save
+```
 
 ### WLAN access point setup
 The hotspot setup for systems running bookwork mainly follows this
