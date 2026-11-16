@@ -193,7 +193,13 @@ async def get_geojson_dataset(
             )
             height_data.append(_feature_collection)
     if show_gebco_altitude:
-        _gebco = Gebco()
+        try:
+            _gebco = Gebco()
+        except (FileNotFoundError, ImportError):
+            raise HTTPException(
+                status_code=503,
+                detail="GEBCO elevation data is not available on this device.",
+            )
         _features = []
         for _segment in track_segments:
             _coords = [

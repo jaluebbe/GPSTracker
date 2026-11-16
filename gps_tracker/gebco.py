@@ -1,8 +1,4 @@
-import h5py
-import os
-import json
 from pathlib import Path
-import numpy as np
 
 NCOLS = 86400
 NROWS = 43200
@@ -48,6 +44,9 @@ class Gebco:
     def __init__(self, file_path: Path = GEBCO_PATH):
         if not file_path.is_file():
             raise FileNotFoundError(file_path)
+        # Optional dependency.
+        import h5py
+
         self.h5_file = h5py.File(file_path, "r")
 
     def get_height(self, lat, lon):

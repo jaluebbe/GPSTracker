@@ -19,6 +19,7 @@ sudo useradd -m gpstracker
 sudo usermod -a -G i2c,video,gpio gpstracker
 sudo passwd gpstracker
 ```
+python3-h5py is only required for GEBCO elevation data (see below).
 
 ### GPS setup and test
 If a compatible GPS device is attached via USB set these options in /etc/default/gpsd :
@@ -78,7 +79,7 @@ sudo su - gpstracker  # or login as user gpstracker directly
 pip install fastapi geojson websockets pygeodesy redis uvicorn
 git clone https://github.com/jaluebbe/GPSTracker.git
 cd GPSTracker
-git clone https://github.com/klokantech/klokantech-gl-fonts fonts
+git clone https://github.com/klokantech/klokantech-gl-fonts fonts  # optional
 cd gps_tracker
 python -m venv --system-site-packages venv
 source venv/bin/activate
@@ -189,6 +190,11 @@ separately even if no GPS data is available:
 sudo cp /home/gpstracker/GPSTracker/etc/systemd/system/pressurelogger.service /etc/systemd/system/
 sudo systemctl enable pressurelogger.service
 ```
+
+### Optional map and elevation data
+
+Only required for the offline map and GEBCO elevation profiles. If missing,
+the related API endpoints return an error.
 
 Prepare OpenStreetMap offline data:
 ```
