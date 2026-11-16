@@ -2,7 +2,7 @@ import sqlite3
 import json
 from fastapi import APIRouter, HTTPException, Request, Response, Path
 from pathlib import Path as FilePath
-from typing import Annotated
+from typing import Annotated, Optional
 
 router = APIRouter(tags=["offline_map"])
 
@@ -25,7 +25,7 @@ def get_db_connection(db_file_name: FilePath) -> sqlite3.Connection:
         if not db_file_name.is_file():
             raise HTTPException(
                 status_code=404,
-                detail=f"File '{db_file_name}' not found.",
+                detail=f"Map data '{db_file_name.stem}' is not installed.",
             )
         conn = sqlite3.connect(
             f"file:{db_file_name}?mode=ro",
@@ -49,7 +49,7 @@ def fetch_tile_data(db_connection, zoom_level, tile_column, tile_row):
     return cursor.fetchone()
 
 
-def get_mbtiles_maxzoom(path: FilePath) -> int | None:
+def get_mbtiles_maxzoom(path: FilePath) -> Optional[int]:
     if not path.is_file():
         return None
     conn = get_db_connection(path)
