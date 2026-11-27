@@ -39,6 +39,10 @@
             <td style="width: 50%"><span id="power">-</span></td>
         </tr>
         <tr>
+            <td>peak, last 60 s (W)</td>
+            <td><span id="peak">-</span></td>
+        </tr>
+        <tr>
             <td>L1 / L2 / L3 (W)</td>
             <td><span id="phases">-</span></td>
         </tr>
@@ -65,8 +69,15 @@
             return Math.round(x).toString();
         }
 
+        const recent = [];
+
         function showCurrent(d) {
-            document.getElementById("power").textContent = fmt(d.power - d.powerProduction);
+            const net = d.power - d.powerProduction;
+            const now = Date.now();
+            recent.push([now, net]);
+            while (recent[0][0] < now - 60000) recent.shift();
+            document.getElementById("power").textContent = fmt(net);
+            document.getElementById("peak").textContent = fmt(Math.max(...recent.map((r) => r[1])));
             document.getElementById("phases").textContent =
                 [d.powerL1, d.powerL2, d.powerL3].map(fmt).join(" / ");
         }
