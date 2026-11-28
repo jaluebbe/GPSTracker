@@ -22,6 +22,9 @@ FIELDS = (
 )
 
 
+MAX_FIELDS = ("power", "powerL1", "powerL2", "powerL3")
+
+
 class SmartMeterLogger:
     def __init__(self):
         self.redis_connection = redis.Redis(decode_responses=True)
@@ -41,6 +44,8 @@ class SmartMeterLogger:
             values = [s[field] for s in self.samples if field in s]
             if values:
                 record[field] = round(sum(values) / len(values), 2)
+                if field in MAX_FIELDS:
+                    record[f"{field}Max"] = round(max(values), 2)
         day = time.strftime("%Y%m%d", time.localtime(self.window_end - 1))
         key = f"smartmeter:{self.hostname}:{day}"
         self.redis_connection.lpush(key, json.dumps(record))

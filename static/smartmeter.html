@@ -42,6 +42,10 @@
             <td><span id="peak">-</span></td>
         </tr>
         <tr>
+            <td>peak L1 / L2 / L3, last 60 s (W)</td>
+            <td><span id="peakPhases">-</span></td>
+        </tr>
+        <tr>
             <td>L1 / L2 / L3 (W)</td>
             <td><span id="phases">-</span></td>
         </tr>
@@ -56,6 +60,10 @@
         <tr>
             <td>heater / motor energy (kWh, est.)</td>
             <td><span id="split">-</span></td>
+        </tr>
+        <tr>
+            <td>show peaks (15 s max.)</td>
+            <td><input type="checkbox" id="showPeaks" onchange="draw();"></td>
         </tr>
         <tr>
             <td>hide heater (L3)</td>
@@ -87,10 +95,13 @@
         function showCurrent(d) {
             const net = d.power - d.powerProduction;
             const now = Date.now();
-            recent.push([now, net]);
+            recent.push([now, net, d.powerL1, d.powerL2, d.powerL3]);
             while (recent[0][0] < now - 60000) recent.shift();
             document.getElementById("power").textContent = fmt(net);
             document.getElementById("peak").textContent = fmt(Math.max(...recent.map((r) => r[1])));
+            document.getElementById("peakPhases").textContent = [2, 3, 4]
+                .map((i) => fmt(Math.max(...recent.map((r) => r[i]))))
+                .join(" / ");
             document.getElementById("phases").textContent =
                 [d.powerL1, d.powerL2, d.powerL3].map(fmt).join(" / ");
         }
@@ -172,8 +183,9 @@
 
         function seriesValue(r, key) {
             if (key === "_motor") return r._motor;
-            if (hideHeater() && (key === "power" || key === "powerL3")) {
-                return r[key] - r._heater;
+            const base = key.replace(/Max$/, "");
+            if (hideHeater() && (base === "power" || base === "powerL3")) {
+                return r[key] === undefined ? undefined : r[key] - r._heater;
             }
             return r[key];
         }
@@ -181,7 +193,14 @@
         function draw() {
             const series = SERIES.slice();
             if (hideHeater()) series.push(["_motor", "motor (est.)", "#d62728", 2, "dot"]);
-            const traces = series.map(([key, name, color, width, dash]) => {
+            if (document.getElementById("showPeaks").checked) {
+                SERIES.forEach(([key, name, color]) => {
+                    if (rows.some((r) => r[key + "Max"] !== undefined)) {
+                        series.push([key + "Max", name + " peak", color, 1, "dash", name]);
+                    }
+                });
+            }
+            const traces = series.map(([key, name, color, width, dash, group]) => {
                 const x = [], y = [];
                 rows.forEach((r, i) => {
                     // Insert a gap marker where data is missing.
@@ -194,6 +213,7 @@
                 });
                 return {
                     x: x, y: y, name: name, type: "scatter", mode: "lines",
+                    legendgroup: group || name, showlegend: !group,
                     line: { color: color, width: width, dash: dash || "solid" },
                     hovertemplate: "%{y:.0f} W",
                 };
