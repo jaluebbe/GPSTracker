@@ -38,10 +38,6 @@
             <td style="width: 50%"><span id="power">-</span></td>
         </tr>
         <tr>
-            <td>peak, last 60 s (W)</td>
-            <td><span id="peak">-</span></td>
-        </tr>
-        <tr>
             <td>peak L1 / L2 / L3, last 60 s (W)</td>
             <td><span id="peakPhases">-</span></td>
         </tr>
@@ -98,7 +94,6 @@
             recent.push([now, net, d.powerL1, d.powerL2, d.powerL3]);
             while (recent[0][0] < now - 60000) recent.shift();
             document.getElementById("power").textContent = fmt(net);
-            document.getElementById("peak").textContent = fmt(Math.max(...recent.map((r) => r[1])));
             document.getElementById("peakPhases").textContent = [2, 3, 4]
                 .map((i) => fmt(Math.max(...recent.map((r) => r[i]))))
                 .join(" / ");
