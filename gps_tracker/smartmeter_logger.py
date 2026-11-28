@@ -22,7 +22,7 @@ FIELDS = (
 )
 
 
-MAX_FIELDS = ("power", "powerL1", "powerL2", "powerL3")
+MAX_FIELDS = ("powerL1", "powerL2", "powerL3")
 
 
 class SmartMeterLogger:

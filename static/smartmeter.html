@@ -194,7 +194,7 @@
             const series = SERIES.slice();
             if (hideHeater()) series.push(["_motor", "motor (est.)", "#d62728", 2, "dot"]);
             if (document.getElementById("showPeaks").checked) {
-                SERIES.forEach(([key, name, color]) => {
+                SERIES.filter(([key]) => key !== "power").forEach(([key, name, color]) => {
                     if (rows.some((r) => r[key + "Max"] !== undefined)) {
                         series.push([key + "Max", name + " peak", color, 1, "dash", name]);
                     }
