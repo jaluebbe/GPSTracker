@@ -1,0 +1,14 @@
+[Unit]
+Description=Smart meter logger
+After=redis-server.service
+
+[Service]
+Type=simple
+User=gpstracker
+Restart=on-failure
+RestartSec=5
+WorkingDirectory=/home/gpstracker/GPSTracker/gps_tracker
+ExecStart=/home/gpstracker/GPSTracker/gps_tracker/smartmeter_logger.py
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+
+<head>
+    <meta charset="utf-8">
+    <title>Smart Meter</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            font-family: Verdana, Geneva, Arial, sans-serif;
+            font-size: 16px;
+            margin: 8px;
+        }
+
+        table,
+        th,
+        td {
+            border: 1px solid black;
+            border-collapse: collapse;
+            padding: 2px 6px;
+        }
+
+        td {
+            text-align: center;
+        }
+
+        #chart {
+            width: 100%;
+            height: 360px;
+        }
+    </style>
+</head>
+
+<body>
+    <table style="width:100%">
+        <tr>
+            <td style="width: 50%">current power (W)</td>
+            <td style="width: 50%"><span id="power">-</span></td>
+        </tr>
+        <tr>
+            <td>peak L1 / L2 / L3, last 60 s (W)</td>
+            <td><span id="peakPhases">-</span></td>
+        </tr>
+        <tr>
+            <td>L1 / L2 / L3 (W)</td>
+            <td><span id="phases">-</span></td>
+        </tr>
+        <tr>
+            <td>energy of selected day (kWh)</td>
+            <td><span id="energy">-</span></td>
+        </tr>
+        <tr>
+            <td>average / max. power (W)</td>
+            <td><span id="stats">-</span></td>
+        </tr>
+        <tr>
+            <td>heater / motor energy (kWh, est.)</td>
+            <td><span id="split">-</span></td>
+        </tr>
+        <tr>
+            <td>show peaks (15 s max.)</td>
+            <td><input type="checkbox" id="showPeaks" onchange="draw();"></td>
+        </tr>
+        <tr>
+            <td>hide heater (L3)</td>
+            <td><input type="checkbox" id="hideHeater" onchange="updateStats(); draw();"></td>
+        </tr>
+        <tr>
+            <td>dataset</td>
+            <td><select id="dataset" onchange="loadDataset();"></select></td>
+        </tr>
+    </table>
+    <br>
+    <div id="chart"></div>
+    <script src="plotly-gl3d-2.11.1.min.js"></script>
+    <script>
+        const SERIES = [
+            ["power", "total", "#000000", 2],
+            ["powerL1", "L1", "#1b9e77", 1],
+            ["powerL2", "L2", "#d95f02", 1],
+            ["powerL3", "L3", "#7570b3", 1],
+        ];
+        let rows = [];
+
+        function fmt(x) {
+            return Math.round(x).toString();
+        }
+
+        const recent = [];
+
+        function showCurrent(d) {
+            const net = d.power - d.powerProduction;
+            const now = Date.now();
+            recent.push([now, net, d.powerL1, d.powerL2, d.powerL3]);
+            while (recent[0][0] < now - 60000) recent.shift();
+            document.getElementById("power").textContent = fmt(net);
+            document.getElementById("peakPhases").textContent = [2, 3, 4]
+                .map((i) => fmt(Math.max(...recent.map((r) => r[i]))))
+                .join(" / ");
+            document.getElementById("phases").textContent =
+                [d.powerL1, d.powerL2, d.powerL3].map(fmt).join(" / ");
+        }
+
+        function connect() {
+            const ws = new WebSocket((window.location.protocol === "https:" ? "wss://" : "ws://") + window.location.host + "/ws/smart_meter");
+            ws.onmessage = (event) => showCurrent(JSON.parse(event.data));
+            ws.onclose = () => setTimeout(connect, 5000);
+        }
+
+        async function listDatasets() {
+            const select = document.getElementById("dataset");
+            const items = [];
+            for (const archived of [false, true]) {
+                const url = "/api/" + (archived ? "archived" : "available") + "_datasets?category=smartmeter";
+                try {
+                    const names = await (await fetch(url)).json();
+                    names.forEach((name) => items.push({ name: name, archived: archived }));
+                } catch (e) { }
+            }
+            items.sort((a, b) => b.name.split("_").pop().localeCompare(a.name.split("_").pop()));
+            items.forEach((item) => {
+                const option = document.createElement("option");
+                option.value = JSON.stringify(item);
+                option.textContent = item.name.split("_").slice(1).join(" ") + (item.archived ? " (archive)" : "");
+                select.appendChild(option);
+            });
+            if (items.length) loadDataset();
+        }
+
+        async function loadDataset() {
+            const item = JSON.parse(document.getElementById("dataset").value);
+            const url = "/api/dataset/" + item.name + ".json" + (item.archived ? "?from_archive=true" : "");
+            rows = await (await fetch(url)).json();
+            splitLoads();
+            updateStats();
+            draw();
+        }
+
+        function percentile(values, q) {
+            const sorted = values.slice().sort((a, b) => a - b);
+            return sorted[Math.floor(q * (sorted.length - 1))];
+        }
+
+        // The motor loads all phases equally, the heater only L3. Base loads
+        // are taken as the 5th percentile of each phase.
+        function splitLoads() {
+            if (!rows.length) return;
+            const base = ["powerL1", "powerL2", "powerL3"].map(
+                (key) => percentile(rows.map((r) => r[key]), 0.05));
+            rows.forEach((r) => {
+                const motor = (Math.max(r.powerL1 - base[0], 0) + Math.max(r.powerL2 - base[1], 0)) / 2;
+                r._motor = 3 * motor;
+                r._heater = Math.max(r.powerL3 - base[2] - motor, 0);
+            });
+        }
+
+        function hideHeater() {
+            return document.getElementById("hideHeater").checked;
+        }
+
+        function netPower(r) {
+            return r.power - (r.powerProduction || 0) - (hideHeater() ? r._heater : 0);
+        }
+
+        function updateStats() {
+            if (!rows.length) return;
+            // Net power: consumption minus production, 15 s per record.
+            const net = rows.map(netPower);
+            const interval = 15;
+            const toKwh = (values) => values.reduce((a, b) => a + b, 0) * interval / 3600 / 1000;
+            const kwh = toKwh(net);
+            document.getElementById("split").textContent =
+                toKwh(rows.map((r) => r._heater)).toFixed(2) + " / " + toKwh(rows.map((r) => r._motor)).toFixed(2);
+            document.getElementById("energy").textContent = kwh.toFixed(2);
+            document.getElementById("stats").textContent =
+                fmt(net.reduce((a, b) => a + b, 0) / net.length) + " / " + fmt(Math.max(...net));
+        }
+
+        function seriesValue(r, key) {
+            if (key === "_motor") return r._motor;
+            const base = key.replace(/Max$/, "");
+            if (hideHeater() && (base === "power" || base === "powerL3")) {
+                return r[key] === undefined ? undefined : r[key] - r._heater;
+            }
+            return r[key];
+        }
+
+        function draw() {
+            const series = SERIES.slice();
+            if (hideHeater()) series.push(["_motor", "motor (est.)", "#d62728", 2, "dot"]);
+            if (document.getElementById("showPeaks").checked) {
+                SERIES.filter(([key]) => key !== "power").forEach(([key, name, color]) => {
+                    if (rows.some((r) => r[key + "Max"] !== undefined)) {
+                        series.push([key + "Max", name + " peak", color, 1, "dash", name]);
+                    }
+                });
+            }
+            const traces = series.map(([key, name, color, width, dash, group]) => {
+                const x = [], y = [];
+                rows.forEach((r, i) => {
+                    // Insert a gap marker where data is missing.
+                    if (i > 0 && r.utc - rows[i - 1].utc > 60) {
+                        x.push(new Date((rows[i - 1].utc + 15) * 1000));
+                        y.push(null);
+                    }
+                    x.push(new Date(r.utc * 1000));
+                    y.push(seriesValue(r, key));
+                });
+                return {
+                    x: x, y: y, name: name, type: "scatter", mode: "lines",
+                    legendgroup: group || name, showlegend: !group,
+                    line: { color: color, width: width, dash: dash || "solid" },
+                    hovertemplate: "%{y:.0f} W",
+                };
+            });
+            const layout = {
+                hovermode: "x unified",
+                font: { size: 14 },
+                margin: { t: 10, r: 10 },
+                legend: { orientation: "h", y: 1.08 },
+                xaxis: { automargin: true, type: "date" },
+                yaxis: { automargin: true, rangemode: "tozero", title: { text: "power [W]" } },
+            };
+            Plotly.react("chart", traces, layout, { responsive: true });
+        }
+
+        connect();
+        listDatasets();
+    </script>
+</body>
+
+</html>
