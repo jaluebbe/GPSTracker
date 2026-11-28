@@ -24,10 +24,9 @@
             text-align: center;
         }
 
-        canvas {
+        #chart {
             width: 100%;
-            height: 300px;
-            border: 1px solid #888;
+            height: 360px;
         }
     </style>
 </head>
@@ -60,10 +59,15 @@
         </tr>
     </table>
     <br>
-    <canvas id="chart"></canvas>
+    <div id="chart"></div>
+    <script src="plotly-gl3d-2.11.1.min.js"></script>
     <script>
-        const COLORS = { power: "#000000", powerL1: "#1b9e77", powerL2: "#d95f02", powerL3: "#7570b3" };
-        const LABELS = { power: "total", powerL1: "L1", powerL2: "L2", powerL3: "L3" };
+        const SERIES = [
+            ["power", "total", "#000000", 2],
+            ["powerL1", "L1", "#1b9e77", 1],
+            ["powerL2", "L2", "#d95f02", 1],
+            ["powerL3", "L3", "#7570b3", 1],
+        ];
         let rows = [];
 
         function fmt(x) {
@@ -84,7 +88,7 @@
         }
 
         function connect() {
-            const ws = new WebSocket("ws://" + window.location.host + "/ws/smart_meter");
+            const ws = new WebSocket((window.location.protocol === "https:" ? "wss://" : "ws://") + window.location.host + "/ws/smart_meter");
             ws.onmessage = (event) => showCurrent(JSON.parse(event.data));
             ws.onclose = () => setTimeout(connect, 5000);
         }
@@ -129,55 +133,34 @@
         }
 
         function draw() {
-            const canvas = document.getElementById("chart");
-            canvas.width = canvas.clientWidth * devicePixelRatio;
-            canvas.height = canvas.clientHeight * devicePixelRatio;
-            const ctx = canvas.getContext("2d");
-            ctx.scale(devicePixelRatio, devicePixelRatio);
-            const w = canvas.clientWidth, h = canvas.clientHeight;
-            const left = 50, bottom = 22, top = 8, right = 8;
-            ctx.clearRect(0, 0, w, h);
-            if (!rows.length) return;
-            const t0 = rows[0].utc, t1 = rows[rows.length - 1].utc;
-            const ymax = Math.max(100, ...rows.map((r) => r.power)) * 1.05;
-            const x = (t) => left + (t - t0) / Math.max(1, t1 - t0) * (w - left - right);
-            const y = (v) => h - bottom - v / ymax * (h - bottom - top);
-            ctx.font = "12px Verdana";
-            ctx.fillStyle = "#444";
-            ctx.strokeStyle = "#ddd";
-            for (let i = 0; i <= 4; i++) {
-                const v = ymax * i / 4;
-                ctx.beginPath(); ctx.moveTo(left, y(v)); ctx.lineTo(w - right, y(v)); ctx.stroke();
-                ctx.fillText(fmt(v), 4, y(v) + 4);
-            }
-            const step = Math.max(1, Math.ceil((t1 - t0) / 3600 / 8)) * 3600;
-            for (let t = Math.ceil(t0 / step) * step; t <= t1; t += step) {
-                const d = new Date(t * 1000);
-                ctx.fillText(d.getHours().toString().padStart(2, "0") + ":00", x(t) - 14, h - 6);
-            }
-            let lx = left + 8;
-            for (const [key, color] of Object.entries(COLORS)) {
-                ctx.fillStyle = color;
-                ctx.fillRect(lx, top + 4, 14, 4);
-                ctx.fillStyle = "#444";
-                ctx.fillText(LABELS[key], lx + 18, top + 10);
-                lx += 18 + ctx.measureText(LABELS[key]).width + 16;
-            }
-            for (const [key, color] of Object.entries(COLORS)) {
-                ctx.strokeStyle = color;
-                ctx.lineWidth = key === "power" ? 2 : 1;
-                ctx.beginPath();
+            const traces = SERIES.map(([key, name, color, width]) => {
+                const x = [], y = [];
                 rows.forEach((r, i) => {
-                    // Break the line at data gaps.
-                    const gap = i > 0 && r.utc - rows[i - 1].utc > 60;
-                    if (i === 0 || gap) ctx.moveTo(x(r.utc), y(r[key]));
-                    else ctx.lineTo(x(r.utc), y(r[key]));
+                    // Insert a gap marker where data is missing.
+                    if (i > 0 && r.utc - rows[i - 1].utc > 60) {
+                        x.push(new Date((rows[i - 1].utc + 15) * 1000));
+                        y.push(null);
+                    }
+                    x.push(new Date(r.utc * 1000));
+                    y.push(r[key]);
                 });
-                ctx.stroke();
-            }
+                return {
+                    x: x, y: y, name: name, type: "scatter", mode: "lines",
+                    line: { color: color, width: width },
+                    hovertemplate: "%{y:.0f} W",
+                };
+            });
+            const layout = {
+                hovermode: "x unified",
+                font: { size: 14 },
+                margin: { t: 10, r: 10 },
+                legend: { orientation: "h", y: 1.08 },
+                xaxis: { automargin: true, type: "date" },
+                yaxis: { automargin: true, rangemode: "tozero", title: { text: "power [W]" } },
+            };
+            Plotly.react("chart", traces, layout, { responsive: true });
         }
 
-        window.addEventListener("resize", draw);
         connect();
         listDatasets();
     </script>
