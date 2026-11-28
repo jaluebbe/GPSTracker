@@ -54,6 +54,14 @@
             <td><span id="stats">-</span></td>
         </tr>
         <tr>
+            <td>heater / motor energy (kWh, est.)</td>
+            <td><span id="split">-</span></td>
+        </tr>
+        <tr>
+            <td>hide heater (L3)</td>
+            <td><input type="checkbox" id="hideHeater" onchange="updateStats(); draw();"></td>
+        </tr>
+        <tr>
             <td>dataset</td>
             <td><select id="dataset" onchange="loadDataset();"></select></td>
         </tr>
@@ -117,23 +125,63 @@
             const item = JSON.parse(document.getElementById("dataset").value);
             const url = "/api/dataset/" + item.name + ".json" + (item.archived ? "?from_archive=true" : "");
             rows = await (await fetch(url)).json();
+            splitLoads();
             updateStats();
             draw();
+        }
+
+        function percentile(values, q) {
+            const sorted = values.slice().sort((a, b) => a - b);
+            return sorted[Math.floor(q * (sorted.length - 1))];
+        }
+
+        // The motor loads all phases equally, the heater only L3. Base loads
+        // are taken as the 5th percentile of each phase.
+        function splitLoads() {
+            if (!rows.length) return;
+            const base = ["powerL1", "powerL2", "powerL3"].map(
+                (key) => percentile(rows.map((r) => r[key]), 0.05));
+            rows.forEach((r) => {
+                const motor = (Math.max(r.powerL1 - base[0], 0) + Math.max(r.powerL2 - base[1], 0)) / 2;
+                r._motor = 3 * motor;
+                r._heater = Math.max(r.powerL3 - base[2] - motor, 0);
+            });
+        }
+
+        function hideHeater() {
+            return document.getElementById("hideHeater").checked;
+        }
+
+        function netPower(r) {
+            return r.power - (r.powerProduction || 0) - (hideHeater() ? r._heater : 0);
         }
 
         function updateStats() {
             if (!rows.length) return;
             // Net power: consumption minus production, 15 s per record.
-            const net = rows.map((r) => r.power - (r.powerProduction || 0));
+            const net = rows.map(netPower);
             const interval = 15;
-            const kwh = net.reduce((a, b) => a + b, 0) * interval / 3600 / 1000;
+            const toKwh = (values) => values.reduce((a, b) => a + b, 0) * interval / 3600 / 1000;
+            const kwh = toKwh(net);
+            document.getElementById("split").textContent =
+                toKwh(rows.map((r) => r._heater)).toFixed(2) + " / " + toKwh(rows.map((r) => r._motor)).toFixed(2);
             document.getElementById("energy").textContent = kwh.toFixed(2);
             document.getElementById("stats").textContent =
                 fmt(net.reduce((a, b) => a + b, 0) / net.length) + " / " + fmt(Math.max(...net));
         }
 
+        function seriesValue(r, key) {
+            if (key === "_motor") return r._motor;
+            if (hideHeater() && (key === "power" || key === "powerL3")) {
+                return r[key] - r._heater;
+            }
+            return r[key];
+        }
+
         function draw() {
-            const traces = SERIES.map(([key, name, color, width]) => {
+            const series = SERIES.slice();
+            if (hideHeater()) series.push(["_motor", "motor (est.)", "#d62728", 2, "dot"]);
+            const traces = series.map(([key, name, color, width, dash]) => {
                 const x = [], y = [];
                 rows.forEach((r, i) => {
                     // Insert a gap marker where data is missing.
@@ -142,11 +190,11 @@
                         y.push(null);
                     }
                     x.push(new Date(r.utc * 1000));
-                    y.push(r[key]);
+                    y.push(seriesValue(r, key));
                 });
                 return {
                     x: x, y: y, name: name, type: "scatter", mode: "lines",
-                    line: { color: color, width: width },
+                    line: { color: color, width: width, dash: dash || "solid" },
                     hovertemplate: "%{y:.0f} W",
                 };
             });
